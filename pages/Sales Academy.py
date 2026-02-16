@@ -430,244 +430,244 @@ def display_customer_report(data_plan_prod, data_float, rates):
         """, unsafe_allow_html=True)
             # ✅ Nouveau calcul basé uniquement sur les jours de ingenieurie
 
-    col1,col2 = st.columns(2)
+    # col1,col2 = st.columns(2)
 
-    with col1:
-        # Nettoyer les noms
-        final_float['Acteur_clean'] = final_float['Acteur'].apply(clean_nom)
-        df_formations['Formateur_clean'] = df_formations['Formateur 1'].apply(clean_nom)
+    # with col1:
+    # Nettoyer les noms
+    final_float['Acteur_clean'] = final_float['Acteur'].apply(clean_nom)
+    df_formations['Formateur_clean'] = df_formations['Formateur 1'].apply(clean_nom)
 
-        # Convertir les dates
-        final_float['Date'] = pd.to_datetime(final_float['Date'], errors='coerce')
-        df_formations['Date de début'] = pd.to_datetime(df_formations['Date de début'], errors='coerce')
+    # Convertir les dates
+    final_float['Date'] = pd.to_datetime(final_float['Date'], errors='coerce')
+    df_formations['Date de début'] = pd.to_datetime(df_formations['Date de début'], errors='coerce')
 
-        # Ajouter le mois dans chaque fichier
-        final_float['Mois'] = final_float['Date'].dt.strftime('%Y-%m')
-        df_formations['Mois'] = df_formations['Date de début'].dt.strftime('%Y-%m')
+    # Ajouter le mois dans chaque fichier
+    final_float['Mois'] = final_float['Date'].dt.strftime('%Y-%m')
+    df_formations['Mois'] = df_formations['Date de début'].dt.strftime('%Y-%m')
 
-        # Calculer les jours réalisés (Jours Réalisés = heures facturées / 8)
-        final_float['Jours Réalisés'] = final_float['Logged Billable hours'] / 8
+    # Calculer les jours réalisés (Jours Réalisés = heures facturées / 8)
+    final_float['Jours Réalisés'] = final_float['Logged Billable hours'] / 8
 
-        # Grouper les jours réalisés par intervenant et mois
-        jours_realises_par_mois = final_float.groupby(['Code Mission', 'Acteur', 'Acteur_clean', 'Mois'])['Jours Réalisés'].sum().reset_index()
+    # Grouper les jours réalisés par intervenant et mois
+    jours_realises_par_mois = final_float.groupby(['Code Mission', 'Acteur', 'Acteur_clean', 'Mois'])['Jours Réalisés'].sum().reset_index()
 
-        # Grouper les jours de formation par formateur et mois
-        jours_formations_par_mois = df_formations.groupby(['Formateur_clean', 'Mois'])['Nombre de jour'].sum().reset_index()
+    # Grouper les jours de formation par formateur et mois
+    jours_formations_par_mois = df_formations.groupby(['Formateur_clean', 'Mois'])['Nombre de jour'].sum().reset_index()
 
-        # Fusionner les deux tables par Acteur_clean et Mois
-        df_merged = jours_realises_par_mois.merge(
-            jours_formations_par_mois,
-            how='left',
-            left_on=['Acteur_clean', 'Mois'],
-            right_on=['Formateur_clean', 'Mois']
-        )
+    # Fusionner les deux tables par Acteur_clean et Mois
+    df_merged = jours_realises_par_mois.merge(
+        jours_formations_par_mois,
+        how='left',
+        left_on=['Acteur_clean', 'Mois'],
+        right_on=['Formateur_clean', 'Mois']
+    )
 
-        # Remplacer NaN par 0 pour les formateurs sans formation ce mois-là
-        df_merged['Nombre de jour'] = df_merged['Nombre de jour'].fillna(0)
+    # Remplacer NaN par 0 pour les formateurs sans formation ce mois-là
+    df_merged['Nombre de jour'] = df_merged['Nombre de jour'].fillna(0)
 
-        # Calculer les jours d'ingénierie
-        df_merged['Jours Ingénierie'] = df_merged['Jours Réalisés'] - df_merged['Nombre de jour']
-        df_merged['Jours Ingénierie'] = df_merged['Jours Ingénierie'].apply(lambda x: max(x, 0))
+    # Calculer les jours d'ingénierie
+    df_merged['Jours Ingénierie'] = df_merged['Jours Réalisés'] - df_merged['Nombre de jour']
+    df_merged['Jours Ingénierie'] = df_merged['Jours Ingénierie'].apply(lambda x: max(x, 0))
 
-        # Créer le pivot final
-        tableau_cumul_jours_ingenierie = df_merged.pivot_table(
-            index=['Code Mission', 'Acteur'],
-            columns='Mois',
-            values='Jours Ingénierie',
-            aggfunc='sum',
-            fill_value=0
-        ).reset_index()
+    # Créer le pivot final
+    tableau_cumul_jours_ingenierie = df_merged.pivot_table(
+        index=['Code Mission', 'Acteur'],
+        columns='Mois',
+        values='Jours Ingénierie',
+        aggfunc='sum',
+        fill_value=0
+    ).reset_index()
 
-        # Ajouter la colonne Total
-        tableau_cumul_jours_ingenierie['Total'] = tableau_cumul_jours_ingenierie.iloc[:, 2:].sum(axis=1)
+    # Ajouter la colonne Total
+    tableau_cumul_jours_ingenierie['Total'] = tableau_cumul_jours_ingenierie.iloc[:, 2:].sum(axis=1)
 
-        # Réorganiser les colonnes
-        colonnes_ordre = ['Code Mission', 'Acteur'] + sorted(tableau_cumul_jours_ingenierie.columns[2:-1]) + ['Total']
-        tableau_cumul_jours_ingenierie = tableau_cumul_jours_ingenierie[colonnes_ordre]
+    # Réorganiser les colonnes
+    colonnes_ordre = ['Code Mission', 'Acteur'] + sorted(tableau_cumul_jours_ingenierie.columns[2:-1]) + ['Total']
+    tableau_cumul_jours_ingenierie = tableau_cumul_jours_ingenierie[colonnes_ordre]
 
-        # Ligne total général
-        total_general = tableau_cumul_jours_ingenierie.iloc[:, 2:].sum()
-        total_general['Code Mission'] = 'Total Général'
-        total_general['Acteur'] = ''
-        tableau_cumul_jours_ingenierie = pd.concat([tableau_cumul_jours_ingenierie, pd.DataFrame([total_general])], ignore_index=True)
+    # Ligne total général
+    total_general = tableau_cumul_jours_ingenierie.iloc[:, 2:].sum()
+    total_general['Code Mission'] = 'Total Général'
+    total_general['Acteur'] = ''
+    tableau_cumul_jours_ingenierie = pd.concat([tableau_cumul_jours_ingenierie, pd.DataFrame([total_general])], ignore_index=True)
 
-        # Formatage
-        tableau_cumul_jours_ingenierie.iloc[:, 2:] = tableau_cumul_jours_ingenierie.iloc[:, 2:].applymap(lambda x: f"{x:.1f}")
-        # 🔹 Liste des formateurs (cleanés)
-        formateurs_clean = df_formations['Formateur_clean'].unique().tolist()
+    # Formatage
+    tableau_cumul_jours_ingenierie.iloc[:, 2:] = tableau_cumul_jours_ingenierie.iloc[:, 2:].applymap(lambda x: f"{x:.1f}")
+    # 🔹 Liste des formateurs (cleanés)
+    formateurs_clean = df_formations['Formateur_clean'].unique().tolist()
 
-        # 🔹 Ajouter une colonne temporaire "Est_formateur" pour style
-        tableau_cumul_jours_ingenierie['Est_formateur'] = tableau_cumul_jours_ingenierie['Acteur'].apply(
-            lambda x: clean_nom(x) in formateurs_clean if pd.notna(x) else False
-        )
+    # 🔹 Ajouter une colonne temporaire "Est_formateur" pour style
+    tableau_cumul_jours_ingenierie['Est_formateur'] = tableau_cumul_jours_ingenierie['Acteur'].apply(
+        lambda x: clean_nom(x) in formateurs_clean if pd.notna(x) else False
+    )
 
-        # 🔹 Ajouter une colonne pour identifier la ligne "Total Général"
-        tableau_cumul_jours_ingenierie["is_total_general"] = tableau_cumul_jours_ingenierie["Code Mission"] == "Total Général"
+    # 🔹 Ajouter une colonne pour identifier la ligne "Total Général"
+    tableau_cumul_jours_ingenierie["is_total_general"] = tableau_cumul_jours_ingenierie["Code Mission"] == "Total Général"
 
-        # 🔹 Fonction de style combinée
-        def style_personnalise(row):
-            styles = []
-            for col in tableau_cumul_jours_ingenierie.columns:
-                style = ""
-                if row["is_total_general"]:  # Surligner ligne Total Général
-                    style += "background-color: #FFCCCC;"
-                elif row.get("Est_formateur", False):  # Surligner ligne formateur
-                    style += "background-color: #FFF2CC;"
-                if col == "Total":  # Surligner colonne Total
-                    style += "background-color: #D9D9D9;"
-                styles.append(style)
-            return styles
-
-
-        # 🔹 Appliquer le style AVANT de supprimer la colonne
-        styled_df = tableau_cumul_jours_ingenierie.style.apply(style_personnalise, axis=1)
+    # 🔹 Fonction de style combinée
+    def style_personnalise(row):
+        styles = []
+        for col in tableau_cumul_jours_ingenierie.columns:
+            style = ""
+            if row["is_total_general"]:  # Surligner ligne Total Général
+                style += "background-color: #FFCCCC;"
+            elif row.get("Est_formateur", False):  # Surligner ligne formateur
+                style += "background-color: #FFF2CC;"
+            if col == "Total":  # Surligner colonne Total
+                style += "background-color: #D9D9D9;"
+            styles.append(style)
+        return styles
 
 
-        # 📌 Affichage
-        st.subheader("Cumul Jours d'Ingénierie réalisés (formateurs surlignés)")
-        st.dataframe(styled_df, use_container_width=True)
-        # 🔹 Liste des formateurs (noms cleanés)
-        formateurs_clean = df_formations['Formateur_clean'].unique().tolist()
-
-        # 🔹 Ajouter une colonne temporaire "Est_formateur"
-        tableau_cumul_jours_ingenierie['Est_formateur'] = tableau_cumul_jours_ingenierie['Acteur'].apply(
-            lambda x: clean_nom(x) in formateurs_clean if pd.notna(x) else False
-        )
-
-        # 🔹 Formateurs visibles avec jours d’ingénierie > 0
-        formateurs_visibles = tableau_cumul_jours_ingenierie[
-            tableau_cumul_jours_ingenierie['Est_formateur'] & 
-            (tableau_cumul_jours_ingenierie['Total'].astype(float) > 0)
-        ]['Acteur'].tolist()
-
-        # 🔸 Bloc Warning Stylisé si formateurs visibles
-        if formateurs_visibles:
-            # Construire le contenu de la liste HTML
-            liste_html = "".join([f"<li style='margin-bottom: 4px;'>{nom}</li>" for nom in formateurs_visibles])
-            
-            # Contenu complet du bloc stylisé
-            message_html = f"""
-            <div style='
-                background-color: #fff3cd;
-                border-left: 6px solid #ffc107;
-                padding: 15px 20px;
-                border-radius: 8px;
-                margin-bottom: 20px;
-            '>
-                <h4 style='margin: 0 0 10px 0;'>⚠️ Les intervenants ayant également réalisé des jours de formations pendant la periode selectionnée :</h4>
-                <ul style='margin: 0; padding-left: 20px;'>{liste_html}</ul>
-            </div>
-            """
-
-            # Affichage dans Streamlit
-            st.markdown(message_html, unsafe_allow_html=True)
-        else:
-            st.info("Aucun formateur n'a réalisé de jours d'ingénierie pendant la période sélectionnée.")
+    # 🔹 Appliquer le style AVANT de supprimer la colonne
+    styled_df = tableau_cumul_jours_ingenierie.style.apply(style_personnalise, axis=1)
 
 
+    # 📌 Affichage
+    st.subheader("Cumul Jours d'Ingénierie réalisés (formateurs surlignés)")
+    st.dataframe(styled_df, use_container_width=True)
+    # 🔹 Liste des formateurs (noms cleanés)
+    formateurs_clean = df_formations['Formateur_clean'].unique().tolist()
 
-        # # Affichage
-        # st.subheader("Cumul Jours d'Ingénierie réalisés")
-        # st.table(tableau_cumul_jours_ingenierie)
+    # 🔹 Ajouter une colonne temporaire "Est_formateur"
+    tableau_cumul_jours_ingenierie['Est_formateur'] = tableau_cumul_jours_ingenierie['Acteur'].apply(
+        lambda x: clean_nom(x) in formateurs_clean if pd.notna(x) else False
+    )
 
+    # 🔹 Formateurs visibles avec jours d’ingénierie > 0
+    formateurs_visibles = tableau_cumul_jours_ingenierie[
+        tableau_cumul_jours_ingenierie['Est_formateur'] & 
+        (tableau_cumul_jours_ingenierie['Total'].astype(float) > 0)
+    ]['Acteur'].tolist()
 
-    with col2:
-        # Vérifier que les PV sont bien fusionnés
-        if 'PV' not in final_float.columns:
-            final_float = final_float.merge(rates[['Acteur', 'PV']], on='Acteur', how='left')
-        final_float['PV'] = final_float['PV'].fillna(0)
+    # 🔸 Bloc Warning Stylisé si formateurs visibles
+    if formateurs_visibles:
+        # Construire le contenu de la liste HTML
+        liste_html = "".join([f"<li style='margin-bottom: 4px;'>{nom}</li>" for nom in formateurs_visibles])
+        
+        # Contenu complet du bloc stylisé
+        message_html = f"""
+        <div style='
+            background-color: #fff3cd;
+            border-left: 6px solid #ffc107;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        '>
+            <h4 style='margin: 0 0 10px 0;'>⚠️ Les intervenants ayant également réalisé des jours de formations pendant la periode selectionnée :</h4>
+            <ul style='margin: 0; padding-left: 20px;'>{liste_html}</ul>
+        </div>
+        """
 
-        # Nettoyage des noms
-        final_float['Acteur_clean'] = final_float['Acteur'].apply(clean_nom)
-        df_formations['Formateur_clean'] = df_formations['Formateur 1'].apply(clean_nom)
-
-        # Dates au format datetime
-        final_float['Date'] = pd.to_datetime(final_float['Date'], errors='coerce')
-        df_formations['Date de début'] = pd.to_datetime(df_formations['Date de début'], errors='coerce')
-
-        # Ajouter Mois
-        final_float['Mois'] = final_float['Date'].dt.strftime('%Y-%m')
-        df_formations['Mois'] = df_formations['Date de début'].dt.strftime('%Y-%m')
-
-        # Jours réalisés
-        final_float['Jours Réalisés'] = final_float['Logged Billable hours'] / 8
-
-        # Grouper jours réalisés
-        jours_realises = final_float.groupby(['Code Mission', 'Acteur', 'Acteur_clean', 'Mois', 'PV'])['Jours Réalisés'].sum().reset_index()
-
-        # Grouper jours formation
-        jours_formations = df_formations.groupby(['Formateur_clean', 'Mois'])['Nombre de jour'].sum().reset_index()
-
-        # Fusion pour soustraction
-        df_ca = jours_realises.merge(
-            jours_formations,
-            how='left',
-            left_on=['Acteur_clean', 'Mois'],
-            right_on=['Formateur_clean', 'Mois']
-        )
-        df_ca['Nombre de jour'] = df_ca['Nombre de jour'].fillna(0)
-
-        # Jours ingénierie
-        df_ca['Jours Ingénierie'] = df_ca['Jours Réalisés'] - df_ca['Nombre de jour']
-        df_ca['Jours Ingénierie'] = df_ca['Jours Ingénierie'].apply(lambda x: max(x, 0))
-
-        # 📌 Calcul CA Ingénierie
-        df_ca['CA Ingénierie'] = df_ca['Jours Ingénierie'] * df_ca['PV']
-
-        # Pivot
-        tableau_cumul_ca_ingenierie = df_ca.pivot_table(
-            index=['Code Mission', 'Acteur'],
-            columns='Mois',
-            values='CA Ingénierie',
-            aggfunc='sum',
-            fill_value=0
-        ).reset_index()
-
-        # Total
-        tableau_cumul_ca_ingenierie['Total'] = tableau_cumul_ca_ingenierie.iloc[:, 2:].sum(axis=1)
-
-        # Réorganisation
-        colonnes_ordre = ['Code Mission', 'Acteur'] + sorted(tableau_cumul_ca_ingenierie.columns[2:-1]) + ['Total']
-        tableau_cumul_ca_ingenierie = tableau_cumul_ca_ingenierie[colonnes_ordre]
-
-        # Ligne total général
-        total_general_ca = tableau_cumul_ca_ingenierie.iloc[:, 2:].sum()
-        total_general_ca['Code Mission'] = 'Total Général'
-        total_general_ca['Acteur'] = ''
-        tableau_cumul_ca_ingenierie = pd.concat([tableau_cumul_ca_ingenierie, pd.DataFrame([total_general_ca])], ignore_index=True)
-
-        # Formatage (montants)
-        tableau_cumul_ca_ingenierie.iloc[:, 2:] = tableau_cumul_ca_ingenierie.iloc[:, 2:].applymap(lambda x: f"{x:,.0f}".replace(",", " "))
-
-        # Surligner les formateurs
-        formateurs_clean = df_formations['Formateur_clean'].unique().tolist()
-        tableau_cumul_ca_ingenierie['Est_formateur'] = tableau_cumul_ca_ingenierie['Acteur'].apply(
-            lambda x: clean_nom(x) in formateurs_clean if pd.notna(x) else False
-        )
-        # 🔹 Ajouter une colonne pour identifier la ligne "Total Général"
-        tableau_cumul_ca_ingenierie["is_total_general"] = tableau_cumul_ca_ingenierie["Code Mission"] == "Total Général"
-
-        # 🔹 Fonction de style combinée
-        def style_personnalise(row):
-            styles = []
-            for col in tableau_cumul_ca_ingenierie.columns:
-                style = ""
-                if row["is_total_general"]:  # Surligner ligne Total Général
-                    style += "background-color: #FFCCCC;"
-                elif row.get("Est_formateur", False):  # Surligner ligne formateur
-                    style += "background-color: #FFF2CC;"
-                if col == "Total":  # Surligner colonne Total
-                    style += "background-color: #D9D9D9;"
-                styles.append(style)
-            return styles
+        # Affichage dans Streamlit
+        st.markdown(message_html, unsafe_allow_html=True)
+    else:
+        st.info("Aucun formateur n'a réalisé de jours d'ingénierie pendant la période sélectionnée.")
 
 
-        # 🔹 Appliquer le style AVANT de supprimer la colonne
-        styled_ca_df = tableau_cumul_ca_ingenierie.style.apply(style_personnalise, axis=1)
 
-        # 📌 Affichage
-        st.subheader("Cumul du CA Engagé Ingénierie (formateurs surlignés)")
-        st.dataframe(styled_ca_df, use_container_width=True)
+    # # Affichage
+    # st.subheader("Cumul Jours d'Ingénierie réalisés")
+    # st.table(tableau_cumul_jours_ingenierie)
+
+
+    # with col2:
+    # Vérifier que les PV sont bien fusionnés
+    if 'PV' not in final_float.columns:
+        final_float = final_float.merge(rates[['Acteur', 'PV']], on='Acteur', how='left')
+    final_float['PV'] = final_float['PV'].fillna(0)
+
+    # Nettoyage des noms
+    final_float['Acteur_clean'] = final_float['Acteur'].apply(clean_nom)
+    df_formations['Formateur_clean'] = df_formations['Formateur 1'].apply(clean_nom)
+
+    # Dates au format datetime
+    final_float['Date'] = pd.to_datetime(final_float['Date'], errors='coerce')
+    df_formations['Date de début'] = pd.to_datetime(df_formations['Date de début'], errors='coerce')
+
+    # Ajouter Mois
+    final_float['Mois'] = final_float['Date'].dt.strftime('%Y-%m')
+    df_formations['Mois'] = df_formations['Date de début'].dt.strftime('%Y-%m')
+
+    # Jours réalisés
+    final_float['Jours Réalisés'] = final_float['Logged Billable hours'] / 8
+
+    # Grouper jours réalisés
+    jours_realises = final_float.groupby(['Code Mission', 'Acteur', 'Acteur_clean', 'Mois', 'PV'])['Jours Réalisés'].sum().reset_index()
+
+    # Grouper jours formation
+    jours_formations = df_formations.groupby(['Formateur_clean', 'Mois'])['Nombre de jour'].sum().reset_index()
+
+    # Fusion pour soustraction
+    df_ca = jours_realises.merge(
+        jours_formations,
+        how='left',
+        left_on=['Acteur_clean', 'Mois'],
+        right_on=['Formateur_clean', 'Mois']
+    )
+    df_ca['Nombre de jour'] = df_ca['Nombre de jour'].fillna(0)
+
+    # Jours ingénierie
+    df_ca['Jours Ingénierie'] = df_ca['Jours Réalisés'] - df_ca['Nombre de jour']
+    df_ca['Jours Ingénierie'] = df_ca['Jours Ingénierie'].apply(lambda x: max(x, 0))
+
+    # 📌 Calcul CA Ingénierie
+    df_ca['CA Ingénierie'] = df_ca['Jours Ingénierie'] * df_ca['PV']
+
+    # Pivot
+    tableau_cumul_ca_ingenierie = df_ca.pivot_table(
+        index=['Code Mission', 'Acteur'],
+        columns='Mois',
+        values='CA Ingénierie',
+        aggfunc='sum',
+        fill_value=0
+    ).reset_index()
+
+    # Total
+    tableau_cumul_ca_ingenierie['Total'] = tableau_cumul_ca_ingenierie.iloc[:, 2:].sum(axis=1)
+
+    # Réorganisation
+    colonnes_ordre = ['Code Mission', 'Acteur'] + sorted(tableau_cumul_ca_ingenierie.columns[2:-1]) + ['Total']
+    tableau_cumul_ca_ingenierie = tableau_cumul_ca_ingenierie[colonnes_ordre]
+
+    # Ligne total général
+    total_general_ca = tableau_cumul_ca_ingenierie.iloc[:, 2:].sum()
+    total_general_ca['Code Mission'] = 'Total Général'
+    total_general_ca['Acteur'] = ''
+    tableau_cumul_ca_ingenierie = pd.concat([tableau_cumul_ca_ingenierie, pd.DataFrame([total_general_ca])], ignore_index=True)
+
+    # Formatage (montants)
+    tableau_cumul_ca_ingenierie.iloc[:, 2:] = tableau_cumul_ca_ingenierie.iloc[:, 2:].applymap(lambda x: f"{x:,.0f}".replace(",", " "))
+
+    # Surligner les formateurs
+    formateurs_clean = df_formations['Formateur_clean'].unique().tolist()
+    tableau_cumul_ca_ingenierie['Est_formateur'] = tableau_cumul_ca_ingenierie['Acteur'].apply(
+        lambda x: clean_nom(x) in formateurs_clean if pd.notna(x) else False
+    )
+    # 🔹 Ajouter une colonne pour identifier la ligne "Total Général"
+    tableau_cumul_ca_ingenierie["is_total_general"] = tableau_cumul_ca_ingenierie["Code Mission"] == "Total Général"
+
+    # 🔹 Fonction de style combinée
+    def style_personnalise(row):
+        styles = []
+        for col in tableau_cumul_ca_ingenierie.columns:
+            style = ""
+            if row["is_total_general"]:  # Surligner ligne Total Général
+                style += "background-color: #FFCCCC;"
+            elif row.get("Est_formateur", False):  # Surligner ligne formateur
+                style += "background-color: #FFF2CC;"
+            if col == "Total":  # Surligner colonne Total
+                style += "background-color: #D9D9D9;"
+            styles.append(style)
+        return styles
+
+
+    # 🔹 Appliquer le style AVANT de supprimer la colonne
+    styled_ca_df = tableau_cumul_ca_ingenierie.style.apply(style_personnalise, axis=1)
+
+    # 📌 Affichage
+    st.subheader("Cumul du CA Engagé Ingénierie (formateurs surlignés)")
+    st.dataframe(styled_ca_df, use_container_width=True)
 
     # ✅ Récupérer les bons totaux depuis les tableaux (hors "Total Général" s’il y est)
     try:
@@ -797,55 +797,55 @@ def display_customer_report(data_plan_prod, data_float, rates):
             return ['background-color: #FFF2CC' if row.get('Est_formateur', False) else '' for _ in row]
 
         # 📊 Affichage
-        st.subheader("📊 Détails générales des intervenants en Ingénierie")
+        st.subheader("Détails générales des intervenants en Ingénierie")
         st.dataframe(intervenants.style.apply(highlight_formateurs, axis=1), use_container_width=True)
 
 
     
-    with col2:
-        st.subheader("Détails du CA Engagé pour les Formateurs")
+    # with col2:
+    #     st.subheader("Détails du CA Engagé pour les Formateurs")
 
-        if jours_formation_par_formateur:
-            # Nettoyer les noms des formateurs (mêmes règles que pour les Acteurs)
-            def clean_nom(nom):
-                if pd.isna(nom):
-                    return ""
-                # Supprimer les accents et mettre en minuscule
-                nom = str(nom).strip().lower()
-                nom = unicodedata.normalize('NFKD', nom).encode('ASCII', 'ignore').decode('utf-8')
-                return nom
+    #     if jours_formation_par_formateur:
+    #         # Nettoyer les noms des formateurs (mêmes règles que pour les Acteurs)
+    #         def clean_nom(nom):
+    #             if pd.isna(nom):
+    #                 return ""
+    #             # Supprimer les accents et mettre en minuscule
+    #             nom = str(nom).strip().lower()
+    #             nom = unicodedata.normalize('NFKD', nom).encode('ASCII', 'ignore').decode('utf-8')
+    #             return nom
 
-            formateur_details = []
-            for nom_formateur, jours_realises in jours_formation_par_formateur.items():
-                nom_clean = clean_nom(nom_formateur)
-                pv = rates_cleaned.loc[rates_cleaned["Acteur_clean"] == nom_clean, "PV"].values
-                pv = pv[0] if len(pv) > 0 else 0
-                ca_engage = jours_realises * pv
-                formateur_details.append({
-                    "Formateur": nom_formateur,
-                    "Jours Formation": round(jours_realises, 1),
-                    "PV (€)": round(pv, 0),
-                    "CA Engagé (€)": round(ca_engage, 0)
-                })
+    #         formateur_details = []
+    #         for nom_formateur, jours_realises in jours_formation_par_formateur.items():
+    #             nom_clean = clean_nom(nom_formateur)
+    #             pv = rates_cleaned.loc[rates_cleaned["Acteur_clean"] == nom_clean, "PV"].values
+    #             pv = pv[0] if len(pv) > 0 else 0
+    #             ca_engage = jours_realises * pv
+    #             formateur_details.append({
+    #                 "Formateur": nom_formateur,
+    #                 "Jours Formation": round(jours_realises, 1),
+    #                 "PV (€)": round(pv, 0),
+    #                 "CA Engagé (€)": round(ca_engage, 0)
+    #             })
 
-            df_formateurs = pd.DataFrame(formateur_details)
-            # ➕ Ajouter ligne de total général
-            total_jours = df_formateurs["Jours Formation"].sum()
-            total_ca = df_formateurs["CA Engagé (€)"].sum()
-            df_formateurs.loc["Total Général"] = {
-                "Formateur": "🧮 Total Général",
-                "Jours Formation": round(total_jours, 1),
-                "PV (€)": "",
-                "CA Engagé (€)": round(total_ca, 0)
-            }
+    #         df_formateurs = pd.DataFrame(formateur_details)
+    #         # ➕ Ajouter ligne de total général
+    #         total_jours = df_formateurs["Jours Formation"].sum()
+    #         total_ca = df_formateurs["CA Engagé (€)"].sum()
+    #         df_formateurs.loc["Total Général"] = {
+    #             "Formateur": "🧮 Total Général",
+    #             "Jours Formation": round(total_jours, 1),
+    #             "PV (€)": "",
+    #             "CA Engagé (€)": round(total_ca, 0)
+    #         }
 
-            # ➕ Mise en forme
-            df_formateurs["PV (€)"] = df_formateurs["PV (€)"].apply(lambda x: f"{x:,.0f}".replace(",", " ") if x != "" else "")
-            df_formateurs["CA Engagé (€)"] = df_formateurs["CA Engagé (€)"].apply(lambda x: f"{x:,.0f}".replace(",", " ") if x != "" else "")
+    #         # ➕ Mise en forme
+    #         df_formateurs["PV (€)"] = df_formateurs["PV (€)"].apply(lambda x: f"{x:,.0f}".replace(",", " ") if x != "" else "")
+    #         df_formateurs["CA Engagé (€)"] = df_formateurs["CA Engagé (€)"].apply(lambda x: f"{x:,.0f}".replace(",", " ") if x != "" else "")
             
-            st.dataframe(df_formateurs)
-        else:
-            st.info("Aucun formateur trouvé dans les données importées.")
+    #         st.dataframe(df_formateurs)
+    #     else:
+    #         st.info("Aucun formateur trouvé dans les données importées.")
 
     # Graphiques
     st.subheader("Visualisations")
@@ -854,13 +854,13 @@ def display_customer_report(data_plan_prod, data_float, rates):
     # Répartition des coûts
     with col6:
         # 5. Affichage comparatif
-        st.subheader("Répartition Jours : Formation vs ingenieurie")
+        st.subheader("Répartition Jours : Formation vs Ingenierie")
         data = pd.DataFrame({
             "Type": ["Formation", "ingenieurie"],
             "Jours": [jours_formation, jours_ingenieurie]
         })
 
-        fig = px.pie(data, names="Type", values="Jours", title="Part des jours consacrés aux Formations vs ingenieurie",
+        fig = px.pie(data, names="Type", values="Jours", title="Part des jours consacrés aux Formations vs Ingenierie",
                     color_discrete_sequence=["#2a9df4", "#9b59b6"])
         st.plotly_chart(fig)
 
@@ -981,7 +981,7 @@ def display_customer_report(data_plan_prod, data_float, rates):
     #     st.write("Aucune donnée disponible pour afficher le graphique.")
 st.markdown("<div class='title'><b>Tableau de bord - Customer Report</b></div>", unsafe_allow_html=True)
 st.image("Logo_Advent.jpg", width=300)
-st.subheader("📘 Formation vs ingenieurie - Sales Academy (238010)")
+st.subheader("📘 Formation vs ingénierie - Sales Academy (238010)")
 # Vérifiez si les données sont disponibles dans la session
 if "data_plan_prod" in st.session_state and "data_float" in st.session_state:
     data_plan_prod = st.session_state["data_plan_prod"]

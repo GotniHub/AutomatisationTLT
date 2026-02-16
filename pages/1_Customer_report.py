@@ -12,7 +12,11 @@ import streamlit.components.v1 as components  # Ajout de l'import correct
 import locale
 import plotly.graph_objects as go
 from streamlit_option_menu import option_menu # type: ignore
-locale.setlocale(locale.LC_ALL, 'fr_FR.UTF-8')
+
+try:
+    locale.setlocale(locale.LC_ALL, 'fr_FR.UTF-8')
+except locale.Error:
+    pass  # Ignore l’erreur sur Streamlit Cloud
 
 # Injecter le CSS pour les cards
 st.markdown("""
@@ -278,8 +282,9 @@ def display_customer_report(data_plan_prod, data_float, rates, selected_interven
         st.write("")
     with col3 : 
         # 🔥 Créer l'affichage de la période en "Mois Année"
-        mois_debut = date_debut.strftime("%B %Y").capitalize()
-        mois_fin = date_fin.strftime("%B %Y").capitalize()
+        mois_debut = date_debut.strftime("%d %B %Y").capitalize()
+        mois_fin = date_fin.strftime("%d %B %Y").capitalize()
+
         # 🎨 CSS stylisé avec effet 3D
         st.markdown("""
             <style>
@@ -371,131 +376,132 @@ def display_customer_report(data_plan_prod, data_float, rates, selected_interven
         
     st.write("")
 
-    col1,col2 = st.columns(2)
+    # col1,col2 = st.columns(2)
 
-    with col1:
-        # 📌 Extraire et transformer les données
-        final_float['Mois'] = pd.to_datetime(final_float['Date']).dt.strftime('%Y-%m')
-        final_float['Jours Réalisés'] = final_float['Logged Billable hours'] / 8
+    # with col1:
 
-        # 📌 Création du tableau croisé dynamique (cumul des jours réalisés par mission et acteur)
-        tableau_cumul_jours = final_float.pivot_table(
-            index=['Code Mission', 'Acteur'],
-            columns='Mois',
-            values='Jours Réalisés',
-            aggfunc='sum',
-            fill_value=0  # Remplace les NaN par 0
-        ).reset_index()
+    # 📌 Extraire et transformer les données
+    final_float['Mois'] = pd.to_datetime(final_float['Date']).dt.strftime('%Y-%m')
+    final_float['Jours Réalisés'] = final_float['Logged Billable hours'] / 8
 
-        # 📌 Ajouter une colonne "Total Jours Réalisés"
-        tableau_cumul_jours["Total"] = tableau_cumul_jours.iloc[:, 2:].sum(axis=1)
+    # 📌 Création du tableau croisé dynamique (cumul des jours réalisés par mission et acteur)
+    tableau_cumul_jours = final_float.pivot_table(
+        index=['Code Mission', 'Acteur'],
+        columns='Mois',
+        values='Jours Réalisés',
+        aggfunc='sum',
+        fill_value=0  # Remplace les NaN par 0
+    ).reset_index()
 
-        # 📌 Réorganiser les colonnes pour afficher 'Total' après 'Acteur'
-        colonnes_ordre = ['Code Mission', 'Acteur'] + sorted(tableau_cumul_jours.columns[2:-1]) + ['Total']
-        tableau_cumul_jours = tableau_cumul_jours[colonnes_ordre]
+    # 📌 Ajouter une colonne "Total Jours Réalisés"
+    tableau_cumul_jours["Total"] = tableau_cumul_jours.iloc[:, 2:].sum(axis=1)
 
-        # 📌 Ajouter une ligne "Total Général" en bas du tableau des jours réalisés
-        total_general_jours = tableau_cumul_jours.iloc[:, 2:].sum(axis=0)  # Somme des jours réalisés par mois
-        total_general_jours["Code Mission"] = "Total Général"
-        total_general_jours["Acteur"] = ""
+    # 📌 Réorganiser les colonnes pour afficher 'Total' après 'Acteur'
+    colonnes_ordre = ['Code Mission', 'Acteur'] + sorted(tableau_cumul_jours.columns[2:-1]) + ['Total']
+    tableau_cumul_jours = tableau_cumul_jours[colonnes_ordre]
 
-        # 📌 Ajouter la ligne au DataFrame
-        tableau_cumul_jours = pd.concat([tableau_cumul_jours, pd.DataFrame([total_general_jours])], ignore_index=True)
+    # 📌 Ajouter une ligne "Total Général" en bas du tableau des jours réalisés
+    total_general_jours = tableau_cumul_jours.iloc[:, 2:].sum(axis=0)  # Somme des jours réalisés par mois
+    total_general_jours["Code Mission"] = "Total Général"
+    total_general_jours["Acteur"] = ""
 
-        tableau_cumul_jours.iloc[:, 2:] = tableau_cumul_jours.iloc[:, 2:].round(1)
+    # 📌 Ajouter la ligne au DataFrame
+    tableau_cumul_jours = pd.concat([tableau_cumul_jours, pd.DataFrame([total_general_jours])], ignore_index=True)
 
-        
-        # ✅ Formatage numérique AVANT styling
-        
-        tableau_cumul_jours.iloc[:, 2:] = tableau_cumul_jours.iloc[:, 2:].applymap(lambda x: f"{x:.1f}")
-        # 🔹 Ajouter une colonne pour identifier la ligne "Total Général"
-        tableau_cumul_jours["is_total_general"] = tableau_cumul_jours["Code Mission"] == "Total Général"
+    tableau_cumul_jours.iloc[:, 2:] = tableau_cumul_jours.iloc[:, 2:].round(1)
 
-        # 🔹 Fonction de style combinée avec les couleurs demandées
-        def style_personnalise(row):
-            styles = []
-            for col in tableau_cumul_jours.columns:
-                style = ""
-                if row["is_total_general"]:
-                    style += "background-color: #FFCCCC;"
-                elif col in ["Code Mission", "Acteur"]:
-                    style += "background-color: #E6E7E8;"  # Gris
-                elif col != "Total":  # Toutes les colonnes mois (sauf Total)
-                    style += "background-color: rgba(0, 51, 160, 0.2);"
-                if col == "Total":
-                    style += "background-color: #FFCCCC;"  # Total colonne
-                styles.append(style)
-            return styles
+    
+    # ✅ Formatage numérique AVANT styling
+    
+    tableau_cumul_jours.iloc[:, 2:] = tableau_cumul_jours.iloc[:, 2:].applymap(lambda x: f"{x:.1f}")
+    # 🔹 Ajouter une colonne pour identifier la ligne "Total Général"
+    tableau_cumul_jours["is_total_general"] = tableau_cumul_jours["Code Mission"] == "Total Général"
 
-        # 🔹 Appliquer le style après formatage
-        styled_df = tableau_cumul_jours.style.apply(style_personnalise, axis=1)
+    # 🔹 Fonction de style combinée avec les couleurs demandées
+    def style_personnalise(row):
+        styles = []
+        for col in tableau_cumul_jours.columns:
+            style = ""
+            if row["is_total_general"]:
+                style += "background-color: #FFCCCC;"
+            elif col in ["Code Mission", "Acteur"]:
+                style += "background-color: #E6E7E8;"  # Gris
+            elif col != "Total":  # Toutes les colonnes mois (sauf Total)
+                style += "background-color: rgba(0, 51, 160, 0.2);"
+            if col == "Total":
+                style += "background-color: #FFCCCC;"  # Total colonne
+            styles.append(style)
+        return styles
 
-        # 📌 Affichage
-        st.subheader("Cumul Jours de production réalisés")
-        st.dataframe(styled_df, use_container_width=True)
+    # 🔹 Appliquer le style après formatage
+    styled_df = tableau_cumul_jours.style.apply(style_personnalise, axis=1)
 
-        #st.table(tableau_cumul_jours)
-        #st.dataframe(tableau_cumul_jours)
+    # 📌 Affichage
+    st.subheader("Cumul Jours de production réalisés")
+    st.dataframe(styled_df, use_container_width=True)
 
-    with col2:
+    #st.table(tableau_cumul_jours)
+    #st.dataframe(tableau_cumul_jours)
 
-        # 📌 Calcul du CA Engagé
-        final_float = final_float.merge(rates[['Acteur', 'PV']], on='Acteur', how='left')
-        final_float['CA Engagé'] = final_float['Jours Réalisés'] * final_float['PV']
+    # with col2:
 
-        # 📌 Création du tableau croisé dynamique (CA Engagé par mission et acteur)
-        tableau_cumul_ca = final_float.pivot_table(
-            index=['Code Mission', 'Acteur'],
-            columns='Mois',
-            values='CA Engagé',
-            aggfunc='sum',
-            fill_value=0  # Remplace les NaN par 0
-        ).reset_index()
+    # 📌 Calcul du CA Engagé
+    final_float = final_float.merge(rates[['Acteur', 'PV']], on='Acteur', how='left')
+    final_float['CA Engagé'] = final_float['Jours Réalisés'] * final_float['PV']
 
-        # 📌 Ajouter une colonne "Total CA Engagé"
-        tableau_cumul_ca["Total"] = tableau_cumul_ca.iloc[:, 2:].sum(axis=1)
+    # 📌 Création du tableau croisé dynamique (CA Engagé par mission et acteur)
+    tableau_cumul_ca = final_float.pivot_table(
+        index=['Code Mission', 'Acteur'],
+        columns='Mois',
+        values='CA Engagé',
+        aggfunc='sum',
+        fill_value=0  # Remplace les NaN par 0
+    ).reset_index()
 
-        # 📌 Réorganiser les colonnes pour afficher 'Total' après 'Acteur'
-        colonnes_ordre = ['Code Mission', 'Acteur'] + sorted(tableau_cumul_ca.columns[2:-1]) + ['Total']
-        tableau_cumul_ca = tableau_cumul_ca[colonnes_ordre]
+    # 📌 Ajouter une colonne "Total CA Engagé"
+    tableau_cumul_ca["Total"] = tableau_cumul_ca.iloc[:, 2:].sum(axis=1)
 
-        # 📌 Ajouter une ligne "Total Général" en bas du tableau du CA engagé
-        total_general_ca = tableau_cumul_ca.iloc[:, 2:].replace({"€": "", " ": ""}, regex=True).apply(pd.to_numeric, errors='coerce').sum(axis=0)
-        total_general_ca["Code Mission"] = "Total Général"
-        total_general_ca["Acteur"] = ""
+    # 📌 Réorganiser les colonnes pour afficher 'Total' après 'Acteur'
+    colonnes_ordre = ['Code Mission', 'Acteur'] + sorted(tableau_cumul_ca.columns[2:-1]) + ['Total']
+    tableau_cumul_ca = tableau_cumul_ca[colonnes_ordre]
 
-        # 📌 Ajouter la ligne au DataFrame
-        tableau_cumul_ca = pd.concat([tableau_cumul_ca, pd.DataFrame([total_general_ca])], ignore_index=True)
+    # 📌 Ajouter une ligne "Total Général" en bas du tableau du CA engagé
+    total_general_ca = tableau_cumul_ca.iloc[:, 2:].replace({"€": "", " ": ""}, regex=True).apply(pd.to_numeric, errors='coerce').sum(axis=0)
+    total_general_ca["Code Mission"] = "Total Général"
+    total_general_ca["Acteur"] = ""
 
-        # ✅ Appliquer le formatage avec le signe euro
-        tableau_cumul_ca.iloc[:, 2:] = tableau_cumul_ca.iloc[:, 2:].applymap(
-            lambda x: f"{int(float(x)):,.0f} €".replace(",", " ")
-        )
+    # 📌 Ajouter la ligne au DataFrame
+    tableau_cumul_ca = pd.concat([tableau_cumul_ca, pd.DataFrame([total_general_ca])], ignore_index=True)
 
-        # 🔹 Ajouter une colonne pour identifier la ligne "Total Général"
-        tableau_cumul_ca["is_total_general"] = tableau_cumul_ca["Code Mission"] == "Total Général"
+    # ✅ Appliquer le formatage avec le signe euro
+    tableau_cumul_ca.iloc[:, 2:] = tableau_cumul_ca.iloc[:, 2:].applymap(
+        lambda x: f"{int(float(x)):,.0f} €".replace(",", " ")
+    )
 
-        # 🔹 Fonction de style combinée harmonisée
-        def style_personnalise(row):
-            styles = []
-            for col in tableau_cumul_ca.columns:
-                style = ""
-                if row["is_total_general"]:
-                    style += "background-color: #FFCCCC;"  # Ligne Total Général
-                elif col in ["Code Mission", "Acteur"]:
-                    style += "background-color: #E6E7E8;"  # Gris
-                elif col != "Total":
-                    style += "background-color: rgba(0, 51, 160, 0.2);"  # Bleu
-                if col == "Total":
-                    style += "background-color: #FFCCCC;"  # Colonne Total
-                styles.append(style)
-            return styles
-        # 🔹 Appliquer le style après formatage
-        styled_ca_df = tableau_cumul_ca.style.apply(style_personnalise, axis=1)
+    # 🔹 Ajouter une colonne pour identifier la ligne "Total Général"
+    tableau_cumul_ca["is_total_general"] = tableau_cumul_ca["Code Mission"] == "Total Général"
 
-        # 📌 Affichage du tableau dans Streamlit
-        st.subheader("Cumul du CA Engagé")
-        st.dataframe(styled_ca_df, use_container_width=True)
+    # 🔹 Fonction de style combinée harmonisée
+    def style_personnalise(row):
+        styles = []
+        for col in tableau_cumul_ca.columns:
+            style = ""
+            if row["is_total_general"]:
+                style += "background-color: #FFCCCC;"  # Ligne Total Général
+            elif col in ["Code Mission", "Acteur"]:
+                style += "background-color: #E6E7E8;"  # Gris
+            elif col != "Total":
+                style += "background-color: rgba(0, 51, 160, 0.2);"  # Bleu
+            if col == "Total":
+                style += "background-color: #FFCCCC;"  # Colonne Total
+            styles.append(style)
+        return styles
+    # 🔹 Appliquer le style après formatage
+    styled_ca_df = tableau_cumul_ca.style.apply(style_personnalise, axis=1)
+
+    # 📌 Affichage du tableau dans Streamlit
+    st.subheader("Cumul du CA Engagé")
+    st.dataframe(styled_ca_df, use_container_width=True)
 
 
         #st.table(tableau_cumul_ca)
@@ -641,7 +647,7 @@ def display_customer_report(data_plan_prod, data_float, rates, selected_interven
 
 st.markdown("<div class='title'><b>Tableau de bord - Customer Report</b></div>", unsafe_allow_html=True)
     
-# navbar=st.container()
+navbar=st.container()
 # with navbar:
 #     selected = option_menu(
 #         menu_title=None,

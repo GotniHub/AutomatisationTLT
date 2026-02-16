@@ -1931,7 +1931,7 @@ elif selected =="RAPPORT CLIENT":
 
         def get_delta_class(delta):
             return "positive" if delta >= 0 else "negative"
-        col1, col2, col3, col4,col5 = st.columns(5)
+        col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.markdown(f"""
             <div class="card">
@@ -1968,33 +1968,33 @@ elif selected =="RAPPORT CLIENT":
 
             </div>
             """, unsafe_allow_html=True)
-        with col5:
-            # 🎯 Filtre optionnel par population pour analyse
-            populations = df_form["Population"].dropna().unique()
-            selected_population = st.selectbox("Filtrer par population", options=["Toute population"] + list(populations))
+        # with col5:
+        #     # 🎯 Filtre optionnel par population pour analyse
+        #     populations = df_form["Population"].dropna().unique()
+        #     selected_population = st.selectbox("Filtrer par population", options=["Toute population"] + list(populations))
 
-            # ➕ Appliquer le filtre sur la population
-            if selected_population != "Toute population":
-                df_filtered = df_form[df_form["Population"] == selected_population]
-            else:
-                df_filtered = df_form
+        #     # ➕ Appliquer le filtre sur la population
+        #     if selected_population != "Toute population":
+        #         df_filtered = df_form[df_form["Population"] == selected_population]
+        #     else:
+        #         df_filtered = df_form
 
-            # ➕ Recalcul du coût moyen par participant
-            nb_part = pd.to_numeric(df_filtered["Nb participant"], errors='coerce').sum()
-            cout_total = pd.to_numeric(
-                df_filtered["Cout formateur"]
-                .astype(str)
-                .str.replace("€", "")
-                .str.replace(",", ""),
-                errors="coerce"
-            ).sum()
-            cout_moyen_filtered = cout_total / nb_part if nb_part != 0 else 0
-            st.markdown(f"""
-            <div class="card">
-                <h2>{format_montant(cout_moyen_filtered)} €</h2>
-                <p>Coût moyen / participant</p>
-            </div>
-            """, unsafe_allow_html=True)
+        #     # ➕ Recalcul du coût moyen par participant
+        #     nb_part = pd.to_numeric(df_filtered["Nb participant"], errors='coerce').sum()
+        #     cout_total = pd.to_numeric(
+        #         df_filtered["Cout formateur"]
+        #         .astype(str)
+        #         .str.replace("€", "")
+        #         .str.replace(",", ""),
+        #         errors="coerce"
+        #     ).sum()
+        #     cout_moyen_filtered = cout_total / nb_part if nb_part != 0 else 0
+        #     st.markdown(f"""
+        #     <div class="card">
+        #         <h2>{format_montant(cout_moyen_filtered)} €</h2>
+        #         <p>Coût moyen / participant</p>
+        #     </div>
+        #     """, unsafe_allow_html=True)
 
 
         # # ➕ Affichage dans une nouvelle carte KPI

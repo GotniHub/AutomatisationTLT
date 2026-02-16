@@ -394,197 +394,197 @@ def display_customer_report(data_plan_prod, data_float, rates):
         
     st.write("")
 
-    col1,col2 = st.columns(2)
+    # col1,col2 = st.columns(2)
 
-    with col1:
-        # 📌 Préparer les données communes (AVANT le radio)
-        final_float['Mois'] = pd.to_datetime(final_float['Date']).dt.strftime('%Y-%m')
-        final_float['Jours Réalisés'] = final_float['Logged Billable hours'] / 8
+    # with col1:
+    # 📌 Préparer les données communes (AVANT le radio)
+    final_float['Mois'] = pd.to_datetime(final_float['Date']).dt.strftime('%Y-%m')
+    final_float['Jours Réalisés'] = final_float['Logged Billable hours'] / 8
 
-        # ➕ Fusionner UNE SEULE FOIS au départ (avant le radio)
-        if 'Nom de la mission' not in final_float.columns:
-            final_float = final_float.merge(
-                final_plan_prod[['Code Mission', 'Nom de la mission']],
-                on='Code Mission',
-                how='left'
-            )
-
-        # 📍 Choix du type d'affichage
-        mode_affichage = st.sidebar.radio(
-            "👁️ Mode d'affichage des jours réalisés",
-            options=["Par intervenant", "Par mission"],
-            index=1
+    # ➕ Fusionner UNE SEULE FOIS au départ (avant le radio)
+    if 'Nom de la mission' not in final_float.columns:
+        final_float = final_float.merge(
+            final_plan_prod[['Code Mission', 'Nom de la mission']],
+            on='Code Mission',
+            how='left'
         )
 
-        if mode_affichage == "Par intervenant":
-            # ➕ Tableau croisé par intervenant
-            tableau_cumul_jours = final_float.pivot_table(
-                index=['Mission fusionnée', 'Acteur'],
-                columns='Mois',
-                values='Jours Réalisés',
-                aggfunc='sum',
-                fill_value=0
-            ).reset_index()
+    # 📍 Choix du type d'affichage
+    mode_affichage = st.sidebar.radio(
+        "👁️ Mode d'affichage des jours réalisés",
+        options=["Par intervenant", "Par mission"],
+        index=1
+    )
 
-            tableau_cumul_jours.rename(columns={"Mission fusionnée": "Code Mission"}, inplace=True)
+    if mode_affichage == "Par intervenant":
+        # ➕ Tableau croisé par intervenant
+        tableau_cumul_jours = final_float.pivot_table(
+            index=['Mission fusionnée', 'Acteur'],
+            columns='Mois',
+            values='Jours Réalisés',
+            aggfunc='sum',
+            fill_value=0
+        ).reset_index()
 
-
-            tableau_cumul_jours["Total"] = tableau_cumul_jours.iloc[:, 2:].sum(axis=1)
-            colonnes_ordre = ['Code Mission', 'Acteur'] + sorted(tableau_cumul_jours.columns[2:-1]) + ['Total']
-            tableau_cumul_jours = tableau_cumul_jours[colonnes_ordre]
-
-            total_general_jours = tableau_cumul_jours.iloc[:, 2:].sum()
-            total_general_jours["Code Mission"] = "Total Général"
-            total_general_jours["Acteur"] = ""
-            tableau_cumul_jours = pd.concat([tableau_cumul_jours, pd.DataFrame([total_general_jours])], ignore_index=True)
-            tableau_cumul_jours["is_total_general"] = tableau_cumul_jours["Code Mission"] == "Total Général"
-
-        else:
-            # ➕ Tableau croisé par mission
-            tableau_cumul_jours = final_float.pivot_table(
-                index=['Nom de la mission'],
-                columns='Mois',
-                values='Jours Réalisés',
-                aggfunc='sum',
-                fill_value=0
-            ).reset_index()
-
-            tableau_cumul_jours['Total'] = tableau_cumul_jours.iloc[:, 1:].sum(axis=1)
-            total_general_jours = tableau_cumul_jours.iloc[:, 1:].sum()
-            total_general_row = pd.DataFrame([['Total Général'] + list(total_general_jours)], columns=tableau_cumul_jours.columns)
-            tableau_cumul_jours = pd.concat([tableau_cumul_jours, total_general_row], ignore_index=True)
-            tableau_cumul_jours["is_total_general"] = tableau_cumul_jours["Nom de la mission"] == "Total Général"
-
-        # 🎨 Mise en forme finale
-        def style_personnalise(row):
-            styles = []
-            for col in tableau_cumul_jours.columns:
-                style = ""
-                if row["is_total_general"]:
-                    style += "background-color: #FFCCCC;"
-                elif col in ["Code Mission", "Acteur", "Nom de la mission"]:
-                    style += "background-color: #E6E7E8;"
-                elif col == "Total":
-                    style += "background-color: #FFCCCC;"
-                else:  # Colonnes Mois
-                    style += "background-color: rgba(0, 51, 160, 0.2);"
-                styles.append(style)
-            return styles
-
-        styled_df = (
-            tableau_cumul_jours
-            .style
-            .apply(style_personnalise, axis=1)
-            .format(precision=1)
-        )
-
-        # 📌 Affichage final
-        titre = "Cumul Jours de production réalisés"
-        if mode_affichage == "Par mission":
-            titre += " par mission"
-        else:
-            titre += " par intervenant"
-
-        st.subheader(titre)
-        st.dataframe(styled_df, use_container_width=True)
+        tableau_cumul_jours.rename(columns={"Mission fusionnée": "Code Mission"}, inplace=True)
 
 
-    with col2:
+        tableau_cumul_jours["Total"] = tableau_cumul_jours.iloc[:, 2:].sum(axis=1)
+        colonnes_ordre = ['Code Mission', 'Acteur'] + sorted(tableau_cumul_jours.columns[2:-1]) + ['Total']
+        tableau_cumul_jours = tableau_cumul_jours[colonnes_ordre]
 
-        # 📌 Fusion des données AVANT (normalement déjà fusionné dans final_float plus haut)
-        # (inutile de refusionner ici puisque c'est déjà fait une seule fois)
+        total_general_jours = tableau_cumul_jours.iloc[:, 2:].sum()
+        total_general_jours["Code Mission"] = "Total Général"
+        total_general_jours["Acteur"] = ""
+        tableau_cumul_jours = pd.concat([tableau_cumul_jours, pd.DataFrame([total_general_jours])], ignore_index=True)
+        tableau_cumul_jours["is_total_general"] = tableau_cumul_jours["Code Mission"] == "Total Général"
 
-        # 📍 Choix du type d'affichage pour le CA Engagé
-        mode_affichage_ca = st.sidebar.radio(
-            "👁️ Mode d'affichage du CA Engagé",
-            options=["Par intervenant", "Par mission"],
-            index=1
-        )
+    else:
+        # ➕ Tableau croisé par mission
+        tableau_cumul_jours = final_float.pivot_table(
+            index=['Nom de la mission'],
+            columns='Mois',
+            values='Jours Réalisés',
+            aggfunc='sum',
+            fill_value=0
+        ).reset_index()
 
-        # On recalcule les CA Engagés avant le pivot :
-        final_float = final_float.merge(rates[['Acteur', 'PV']], on='Acteur', how='left')
-        final_float['PV'] = final_float['PV'].fillna(0)
-        final_float['CA Engagé'] = final_float['Jours Réalisés'] * final_float['PV']
+        tableau_cumul_jours['Total'] = tableau_cumul_jours.iloc[:, 1:].sum(axis=1)
+        total_general_jours = tableau_cumul_jours.iloc[:, 1:].sum()
+        total_general_row = pd.DataFrame([['Total Général'] + list(total_general_jours)], columns=tableau_cumul_jours.columns)
+        tableau_cumul_jours = pd.concat([tableau_cumul_jours, total_general_row], ignore_index=True)
+        tableau_cumul_jours["is_total_general"] = tableau_cumul_jours["Nom de la mission"] == "Total Général"
 
-        if mode_affichage_ca == "Par intervenant":
-            # ➕ Tableau croisé par intervenant
-            tableau_cumul_ca = final_float.pivot_table(
-                index=['Mission fusionnée', 'Acteur'],
-                columns='Mois',
-                values='CA Engagé',
-                aggfunc='sum',
-                fill_value=0
-            ).reset_index()
-            tableau_cumul_ca.rename(columns={"Mission fusionnée": "Code Mission"}, inplace=True)
+    # 🎨 Mise en forme finale
+    def style_personnalise(row):
+        styles = []
+        for col in tableau_cumul_jours.columns:
+            style = ""
+            if row["is_total_general"]:
+                style += "background-color: #FFCCCC;"
+            elif col in ["Code Mission", "Acteur", "Nom de la mission"]:
+                style += "background-color: #E6E7E8;"
+            elif col == "Total":
+                style += "background-color: #FFCCCC;"
+            else:  # Colonnes Mois
+                style += "background-color: rgba(0, 51, 160, 0.2);"
+            styles.append(style)
+        return styles
 
-            tableau_cumul_ca["Total"] = tableau_cumul_ca.iloc[:, 2:].sum(axis=1)
-            colonnes_ordre = ['Code Mission', 'Acteur'] + sorted(tableau_cumul_ca.columns[2:-1]) + ['Total']
-            tableau_cumul_ca = tableau_cumul_ca[colonnes_ordre]
+    styled_df = (
+        tableau_cumul_jours
+        .style
+        .apply(style_personnalise, axis=1)
+        .format(precision=1)
+    )
 
-            total_general_ca = tableau_cumul_ca.iloc[:, 2:].sum()
-            total_general_ca["Code Mission"] = "Total Général"
-            total_general_ca["Acteur"] = ""
-            tableau_cumul_ca = pd.concat([tableau_cumul_ca, pd.DataFrame([total_general_ca])], ignore_index=True)
-            tableau_cumul_ca["is_total_general"] = tableau_cumul_ca["Code Mission"] == "Total Général"
+    # 📌 Affichage final
+    titre = "Cumul Jours de production réalisés"
+    if mode_affichage == "Par mission":
+        titre += " par mission"
+    else:
+        titre += " par intervenant"
 
-        else:
-            # ➕ Tableau croisé par mission
-            tableau_cumul_ca = final_float.pivot_table(
-                index=['Nom de la mission'],
-                columns='Mois',
-                values='CA Engagé',
-                aggfunc='sum',
-                fill_value=0
-            ).reset_index()
+    st.subheader(titre)
+    st.dataframe(styled_df, use_container_width=True)
 
-            tableau_cumul_ca['Total'] = tableau_cumul_ca.iloc[:, 1:].sum(axis=1)
-            total_general_ca = tableau_cumul_ca.iloc[:, 1:].sum()
-            total_general_row = pd.DataFrame([['Total Général'] + list(total_general_ca)], columns=tableau_cumul_ca.columns)
-            tableau_cumul_ca = pd.concat([tableau_cumul_ca, total_general_row], ignore_index=True)
-            tableau_cumul_ca["is_total_general"] = tableau_cumul_ca["Nom de la mission"] == "Total Général"
 
-        # 🎨 Mise en forme finale avec les couleurs demandées
-        def style_personnalise_ca(row):
-            styles = []
-            for col in tableau_cumul_ca.columns:
-                style = ""
-                if row["is_total_general"]:
-                    style += "background-color: #FFCCCC;"
-                elif col in ["Code Mission", "Acteur", "Nom de la mission"]:
-                    style += "background-color: #E6E7E8;"
-                elif col == "Total":
-                    style += "background-color: #FFCCCC;"
-                else:  # Colonnes Mois
-                    style += "background-color: rgba(0, 51, 160, 0.2);"
-                styles.append(style)
-            return styles
-        # ➕ Formatage des colonnes numériques avec l'euro
-        def format_euro(val):
-            try:
-                val_float = float(val)
-                return f"{val_float:,.0f} €".replace(",", " ")
-            except:
-                return val
+    # with col2:
 
-        # ➕ Colonnes à formater (tout sauf Code Mission et Acteur)
-        colonnes_a_formater = [col for col in tableau_cumul_ca.columns if col not in ['Code Mission', 'Acteur', 'Nom de la mission', 'is_total_general']]
+    # 📌 Fusion des données AVANT (normalement déjà fusionné dans final_float plus haut)
+    # (inutile de refusionner ici puisque c'est déjà fait une seule fois)
 
-        styled_ca_df = (
-            tableau_cumul_ca
-            .style
-            .apply(style_personnalise_ca, axis=1)
-            .format({col: format_euro for col in colonnes_a_formater})
-        )
+    # 📍 Choix du type d'affichage pour le CA Engagé
+    mode_affichage_ca = st.sidebar.radio(
+        "👁️ Mode d'affichage du CA Engagé",
+        options=["Par intervenant", "Par mission"],
+        index=1
+    )
 
-        # 📌 Affichage final
-        titre_ca = "Cumul du CA Engagé"
-        if mode_affichage_ca == "Par mission":
-            titre_ca += " par mission"
-        else:
-            titre_ca += " par intervenant"
+    # On recalcule les CA Engagés avant le pivot :
+    final_float = final_float.merge(rates[['Acteur', 'PV']], on='Acteur', how='left')
+    final_float['PV'] = final_float['PV'].fillna(0)
+    final_float['CA Engagé'] = final_float['Jours Réalisés'] * final_float['PV']
 
-        st.subheader(titre_ca)
-        st.dataframe(styled_ca_df, use_container_width=True)
+    if mode_affichage_ca == "Par intervenant":
+        # ➕ Tableau croisé par intervenant
+        tableau_cumul_ca = final_float.pivot_table(
+            index=['Mission fusionnée', 'Acteur'],
+            columns='Mois',
+            values='CA Engagé',
+            aggfunc='sum',
+            fill_value=0
+        ).reset_index()
+        tableau_cumul_ca.rename(columns={"Mission fusionnée": "Code Mission"}, inplace=True)
+
+        tableau_cumul_ca["Total"] = tableau_cumul_ca.iloc[:, 2:].sum(axis=1)
+        colonnes_ordre = ['Code Mission', 'Acteur'] + sorted(tableau_cumul_ca.columns[2:-1]) + ['Total']
+        tableau_cumul_ca = tableau_cumul_ca[colonnes_ordre]
+
+        total_general_ca = tableau_cumul_ca.iloc[:, 2:].sum()
+        total_general_ca["Code Mission"] = "Total Général"
+        total_general_ca["Acteur"] = ""
+        tableau_cumul_ca = pd.concat([tableau_cumul_ca, pd.DataFrame([total_general_ca])], ignore_index=True)
+        tableau_cumul_ca["is_total_general"] = tableau_cumul_ca["Code Mission"] == "Total Général"
+
+    else:
+        # ➕ Tableau croisé par mission
+        tableau_cumul_ca = final_float.pivot_table(
+            index=['Nom de la mission'],
+            columns='Mois',
+            values='CA Engagé',
+            aggfunc='sum',
+            fill_value=0
+        ).reset_index()
+
+        tableau_cumul_ca['Total'] = tableau_cumul_ca.iloc[:, 1:].sum(axis=1)
+        total_general_ca = tableau_cumul_ca.iloc[:, 1:].sum()
+        total_general_row = pd.DataFrame([['Total Général'] + list(total_general_ca)], columns=tableau_cumul_ca.columns)
+        tableau_cumul_ca = pd.concat([tableau_cumul_ca, total_general_row], ignore_index=True)
+        tableau_cumul_ca["is_total_general"] = tableau_cumul_ca["Nom de la mission"] == "Total Général"
+
+    # 🎨 Mise en forme finale avec les couleurs demandées
+    def style_personnalise_ca(row):
+        styles = []
+        for col in tableau_cumul_ca.columns:
+            style = ""
+            if row["is_total_general"]:
+                style += "background-color: #FFCCCC;"
+            elif col in ["Code Mission", "Acteur", "Nom de la mission"]:
+                style += "background-color: #E6E7E8;"
+            elif col == "Total":
+                style += "background-color: #FFCCCC;"
+            else:  # Colonnes Mois
+                style += "background-color: rgba(0, 51, 160, 0.2);"
+            styles.append(style)
+        return styles
+    # ➕ Formatage des colonnes numériques avec l'euro
+    def format_euro(val):
+        try:
+            val_float = float(val)
+            return f"{val_float:,.0f} €".replace(",", " ")
+        except:
+            return val
+
+    # ➕ Colonnes à formater (tout sauf Code Mission et Acteur)
+    colonnes_a_formater = [col for col in tableau_cumul_ca.columns if col not in ['Code Mission', 'Acteur', 'Nom de la mission', 'is_total_general']]
+
+    styled_ca_df = (
+        tableau_cumul_ca
+        .style
+        .apply(style_personnalise_ca, axis=1)
+        .format({col: format_euro for col in colonnes_a_formater})
+    )
+
+    # 📌 Affichage final
+    titre_ca = "Cumul du CA Engagé"
+    if mode_affichage_ca == "Par mission":
+        titre_ca += " par mission"
+    else:
+        titre_ca += " par intervenant"
+
+    st.subheader(titre_ca)
+    st.dataframe(styled_ca_df, use_container_width=True)
 
         # Détails des intervenants
     st.subheader("Détails générales des intervenants ")
