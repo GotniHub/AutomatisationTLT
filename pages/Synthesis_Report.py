@@ -7,14 +7,41 @@ import re
 import numpy as np
 import streamlit.components.v1 as components  # Ajout de l'import correct
 import locale
-
+from ui import inject_shared_css, show_sidebar
+from app import require_auth
+require_auth()
 # locale.setlocale(locale.LC_ALL, 'fr_FR.UTF-8')
-
+st.logo("Logo_Advent.png", icon_image="Logom.png")
 def display_customer_report(data_plan_prod, data_float, rates):
-    #logo_path = "Logo_Advent.jpg"
+    #logo_path = "Logo_Advent.png"
     # Injecter le CSS pour les cards
     st.markdown("""
         <style>
+        [data-testid="stAppViewContainer"] {
+            background:
+                radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.12), transparent 22%),
+                radial-gradient(circle at 80% 18%, rgba(147, 197, 253, 0.16), transparent 20%),
+                radial-gradient(circle at 50% 75%, rgba(96, 165, 250, 0.10), transparent 28%),
+                linear-gradient(180deg, #f8fbff 0%, #eef4ff 52%, #e9f0fb 100%);
+            min-height: 100vh;
+        }
+
+        [data-testid="stAppViewContainer"]::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(37, 99, 235, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(37, 99, 235, 0.05) 1px, transparent 1px);
+            background-size: 42px 42px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        [data-testid="stAppViewContainer"] > [data-testid="stMain"] {
+            position: relative;
+            z-index: 1;
+        }                
         .card-container {
             display: flex;
             gap: 20px;
@@ -131,7 +158,37 @@ def display_customer_report(data_plan_prod, data_float, rates):
     else:
         filtered_float = data_float[data_float["Code Mission"].isin(missions_selectionnees)]
 
+    import base64
 
+    def get_image_base64(image_path):
+        with open(image_path, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode()
+
+    logo_base64 = get_image_base64("Logo_Africa.png")  # ✅ Racine du projet
+
+    st.sidebar.markdown("---")
+
+    st.sidebar.markdown(
+        f"""
+        <div style="text-align: center; padding: 15px 10px; font-family: 'Segoe UI', sans-serif;">
+            <p style="font-size: 12px; color: #888; margin: 0 0 6px 0; letter-spacing: 0.5px;">
+                Developed by
+            </p>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; margin-bottom: 10px;">
+                <p style="font-size: 15px; font-weight: 700; color: #0033A0; margin: 0; letter-spacing: 1px;">
+                    Ilyass GOTNI
+                </p>
+                <img src="data:image/png;base64,{logo_base64}" style="height: 35px; width: auto; object-fit: contain;"/>
+            </div>
+            <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 8px 0;">
+            <p style="font-size: 10px; color: #aaa; margin: 0; letter-spacing: 0.3px;">
+                © 2026 · All Rights Reserved<br>
+                Unauthorized use prohibited
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 
     # Vérifier si les données existent après le filtre de mission
@@ -345,94 +402,95 @@ def display_customer_report(data_plan_prod, data_float, rates):
     # Ajouter au tableau final
     missions_resume = pd.concat([missions_resume, total_row], ignore_index=True)
 
-    # ✅ Affichage des informations sous forme de tableau stylisé
-    col1, col2, col3 = st.columns([2, 1, 2])
+    # 🔥 Créer l'affichage de la période en "Mois Année"
+    mois_debut = date_debut.strftime("%d %B %Y").capitalize()
+    mois_fin = date_fin.strftime("%d %B %Y").capitalize()
+    
+    st.markdown(f"""
+        <style>
+        .info-container {{
+            display: flex;
+            gap: 30px;
+        }}
+        .client-container, .periode-container {{
+            border: 2px solid #0033A0;
+            border-radius: 15px;
+            padding: 15px 25px;
+            background-color: #E6E7E8;
+            box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }}
+        .client-label, .periode-text {{
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #333;
+        }}
+        .client-name, .periode-date {{
+            color: #0033A0;
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-top: 5px;
+        }}
+        </style>
+    """, unsafe_allow_html=True)
+    col1, col2, col3 = st.columns([3, 2, 2])
+
     with col1:
         st.markdown(f"""
-            <style>
-                .multi-mission-container {{
-                    display: flex;
-                    flex-direction: column;
-                    margin-bottom: 20px;
-                }}
-                .multi-mission-table {{
-                    border-collapse: collapse;
-                    width: 100%;
-                    font-size: 1rem;
-                    border-radius: 8px;
-                    overflow: hidden;
-                    border: 2px solid #0033A0;
-                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-                }}
-                .multi-mission-table th, .multi-mission-table td {{
-                    border: 1px solid #ccc;
-                    padding: 8px;
-                    text-align: left;
-                    font-weight: bold;
-                }}
-                .multi-mission-table th {{
-                    background-color: rgba(0, 51, 160, 0.2);
-                    color: black;
-                    text-align: left;
-                }}
-                .multi-mission-table td:nth-child(2) {{
-                    background-color: #E6E7E8;
-                    color: black;
-                }}
-            </style>
-        """, unsafe_allow_html=True)
-
-        st.markdown(f"""
-            <div class="multi-mission-container">
-                <h4>📋 Liste des missions sélectionnées :</h4>
-                {missions_resume.to_html(index=False, classes="multi-mission-table", justify="left")}
+            <div class="client-container">
+                <div class="client-label">🏷️ Client :</div>
+                <div class="client-name">{clients_selectionnes}</div>
             </div>
         """, unsafe_allow_html=True)
 
-    with col2:
-        st.write("")
-
-    with col3 : 
-        # 🔥 Créer l'affichage de la période en "Mois Année"
-        mois_debut = date_debut.strftime("%B %Y").capitalize()
-        mois_fin = date_fin.strftime("%B %Y").capitalize()
+    with col3:
         st.markdown(f"""
-            <style>
-            .info-container {{
+            <div class="periode-container">
+                <div class="periode-text">📅 Période sélectionnée :</div>
+                <div class="periode-date">{mois_debut} - {mois_fin}</div>
+            </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown(f"""
+        <style>
+            .multi-mission-container {{
                 display: flex;
-                gap: 30px;
+                flex-direction: column;
+                margin-bottom: 20px;
             }}
-            .client-container, .periode-container {{
+            .multi-mission-table {{
+                border-collapse: collapse;
+                width: 100%;
+                font-size: 1rem;
+                border-radius: 8px;
+                overflow: hidden;
                 border: 2px solid #0033A0;
-                border-radius: 15px;
-                padding: 15px 25px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            }}
+            .multi-mission-table th, .multi-mission-table td {{
+                border: 1px solid #ccc;
+                padding: 8px;
+                text-align: left;
+                font-weight: bold;
+            }}
+            .multi-mission-table th {{
+                background-color: rgba(0, 51, 160, 0.2);
+                color: black;
+                text-align: left;
+            }}
+            .multi-mission-table td:nth-child(2) {{
                 background-color: #E6E7E8;
-                box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.5);
-                text-align: center;
+                color: black;
             }}
-            .client-label, .periode-text {{
-                font-size: 1.2rem;
-                font-weight: bold;
-                color: #333;
-            }}
-            .client-name, .periode-date {{
-                color: #0033A0;
-                font-size: 1.3rem;
-                font-weight: bold;
-                margin-top: 5px;
-            }}
-            </style>
-            <div class="info-container">
-                <div class="client-container">
-                    <div class="client-label">🏷️ Client :</div>
-                    <div class="client-name">{clients_selectionnes}</div>
-                </div>
-                <div class="periode-container">
-                    <div class="periode-text">📅 Période sélectionnée :</div>
-                    <div class="periode-date">{mois_debut} - {mois_fin}</div>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
+        </style>
+    """, unsafe_allow_html=True)
+
+    st.markdown(f"""
+        <div class="multi-mission-container">
+            <h4>📋 Liste des missions sélectionnées :</h4>
+            {missions_resume.to_html(index=False, classes="multi-mission-table", justify="left")}
+        </div>
+    """, unsafe_allow_html=True)
 
     # Section Budget (cards)
     st.subheader("Budget")
@@ -814,7 +872,9 @@ def display_customer_report(data_plan_prod, data_float, rates):
         st.write("Aucune donnée disponible pour afficher le graphique.")
 
 st.markdown("<div class='title'><b> Tableau de bord - Customer Report</b></div>", unsafe_allow_html=True)
-st.image("Logo_Advent.jpg", width=300)
+st.image("Logo_Advent.png", width=300)
+inject_shared_css()
+show_sidebar()
 # Vérifiez si les données sont disponibles dans la session
 if "data_plan_prod" in st.session_state and "data_float" in st.session_state:
     data_plan_prod = st.session_state["data_plan_prod"]

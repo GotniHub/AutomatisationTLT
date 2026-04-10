@@ -4,43 +4,17 @@ import plotly.graph_objects as go
 import re
 import locale
 import os
-from app import require_auth
-require_auth()
+
 try:
     locale.setlocale(locale.LC_ALL, 'fr_FR.UTF-8')
 except locale.Error:
     pass
-st.logo("Logo_Advent.png", icon_image="Logom.png")
+
 # (garde ton CSS ici comme tu l'as déjà)
 # st.markdown(""" <style> ... </style> """, unsafe_allow_html=True)
 # Injecter le CSS pour les cards
 st.markdown("""
     <style>
-    [data-testid="stAppViewContainer"] {
-        background:
-            radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.12), transparent 22%),
-            radial-gradient(circle at 80% 18%, rgba(147, 197, 253, 0.16), transparent 20%),
-            radial-gradient(circle at 50% 75%, rgba(96, 165, 250, 0.10), transparent 28%),
-            linear-gradient(180deg, #f8fbff 0%, #eef4ff 52%, #e9f0fb 100%);
-        min-height: 100vh;
-    }
-
-    [data-testid="stAppViewContainer"]::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-        background-image:
-            linear-gradient(rgba(37, 99, 235, 0.05) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(37, 99, 235, 0.05) 1px, transparent 1px);
-        background-size: 42px 42px;
-        pointer-events: none;
-        z-index: 0;
-    }
-
-    [data-testid="stAppViewContainer"] > [data-testid="stMain"] {
-        position: relative;
-        z-index: 1;
-    }
     .card-container {
         display: flex;
         gap: 20px;
@@ -54,90 +28,30 @@ st.markdown("""
         color: #333;
     }
     .card {
-        position: relative;
-        overflow: hidden;
-        background: linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(248,250,252,0.94) 100%);
-        border: 1px solid rgba(226, 232, 240, 0.95);
-        border-radius: 22px;
-        padding: 24px 22px;
+        background-color: #f9f9f9;
+        border-radius: 10px;
+        padding: 20px;
         text-align: center;
+        box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
         flex: 1;
-        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
-        backdrop-filter: blur(10px);
-        transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
     }
-
-    /* halo léger dans la card */
-    .card::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: radial-gradient(circle at top right, rgba(59,130,246,0.12), transparent 35%);
-        pointer-events: none;
-    }
-
-    /* ligne brillante en haut */
-    .card::after {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 18px;
-        right: 18px;
-        height: 4px;
-        border-radius: 999px;
-        background: linear-gradient(90deg, #60a5fa, #2563eb, #1d4ed8);
-        opacity: 0.9;
-    }
-
-    /* effet dynamique */
-    .card:hover {
-        transform: translateY(-6px);
-        border-color: rgba(37, 99, 235, 0.25);
-        box-shadow: 0 18px 40px rgba(37, 99, 235, 0.14);
-    }
-
-    /* chiffre principal */
     .metric {
-        position: relative;
-        z-index: 1;
-        font-size: 2.2rem;
-        font-weight: 800;
-        color: #0f172a;
-        letter-spacing: -0.03em;
-        margin-bottom: 8px;
+        font-size: 2rem;
+        font-weight: bold;
     }
-
-    /* libellé */
-    .label {
-        position: relative;
-        z-index: 1;
-        font-size: 1rem;
-        font-weight: 500;
-        color: #64748b;
-        margin-bottom: 10px;
-    }
-
-    /* delta */
     .delta {
-        position: relative;
-        z-index: 1;
-        display: inline-block;
-        padding: 6px 12px;
-        border-radius: 999px;
-        font-size: 0.95rem;
-        font-weight: 700;
-        margin-top: 6px;
-        background: rgba(15, 23, 42, 0.04);
+        font-size: 1.2rem;
+        margin-top: 5px;
     }
-
+    .label {
+        font-size: 1rem;
+        color: #555;
+    }
     .positive {
-        color: #15803d;
-        background: rgba(34, 197, 94, 0.12);
+        color: green;
     }
-
     .negative {
-        color: #dc2626;
-        background: rgba(239, 68, 68, 0.12);
+        color: red;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -189,9 +103,9 @@ st.markdown("""
 
 # ✅ Mapping Entreprise (Rates) -> fichier logo (dans ton root)
 COMPANY_LOGO_MAP = {
-    "Advent +": "Logo_Advent.png",
-    "Advent+": "Logo_Advent.png",
-    "Advent": "Logo_Advent.png",
+    "Advent +": "Logo_Advent.jpg",
+    "Advent+": "Logo_Advent.jpg",
+    "Advent": "Logo_Advent.jpg",
 
     "Adventae": "Logo_Adventae.png",
 
@@ -200,14 +114,14 @@ COMPANY_LOGO_MAP = {
     "Advent Africa": "Logo_Africa.jpg",
     "Africa": "Logo_Africa.jpg",
 
-    "Adventage Sud": "Logo_Adventage_Sud.png",
-    "Advantage": "Logo_Adventage_Sud.png",
+    "Adventage Sud": "Logo_Adventage_Sud.jpg",
+    "Advantage": "Logo_Advantage_Sud.jpg",
 
     # optionnel si tu as des partenaires
     "Partner": "Logo_Partner.png",
 }
 
-DEFAULT_LOGO = "Logo_Advent.png"  # fallback (ou "Logom.png")
+DEFAULT_LOGO = "LOGO.png"  # fallback (ou "Logom.png")
 
 
 def normalize_company(x: str) -> str:
@@ -287,48 +201,12 @@ def color_ecart(val):
             return ""
     except:
         return ""
-    
-def style_budget_tables(row):
-
-    styles = []
-
-    for col in row.index:
-
-        s = ""
-
-        # Code mission / nom mission
-        if col in ["Code Mission", "Nom de la mission"]:
-            s += "background-color:#E6E7E8;"
-
-        # Budget annuel
-        elif "Budget Annuel" in col:
-            s += "background-color: rgba(100, 130, 160, 0.35); font-weight:bold;"
-
-        # Restant cumulé
-        elif "Restant Cumulé" in col:
-            s += "background-color: rgba(100, 130, 160, 0.35); font-weight:bold;"
-
-        # Budget mensuel
-        elif "Budget" in col and "Annuel" not in col:
-            s += "background-color: rgba(222, 184, 135, 0.35);"
-
-        # Réalisé / Produit 
-        elif "Réalisé" in col or "Produit" in col:
-            s += "background-color:rgba(46,125,50,0.35);"
-
-        # Restant
-        elif "Restant" in col:
-            s += "background-color: rgba(255, 193, 7, 0.35);"
-
-        styles.append(s)
-
-    return styles
 
 # =========================================================
 # ✅ NOUVELLE PAGE : VUE ACTEUR (Intervenant -> Ses missions)
 # =========================================================
 
-def display_actor_report(data_plan_prod, data_float, rates, acteur_filter, selected_missions, pv_acteur):
+def display_actor_report(data_plan_prod, data_float, rates, acteur_filter, selected_missions):
     # -----------------------
     # ✅ Préparations / sécurités
     # -----------------------
@@ -402,6 +280,7 @@ def display_actor_report(data_plan_prod, data_float, rates, acteur_filter, selec
         st.warning("⚠️ Aucune donnée disponible pour la période sélectionnée.")
         st.stop()
 
+
     # ✅ Filtrer FINANCE (plan prod) sur les missions sélectionnées (union budget/réalisé)
     missions_acteur = [str(x).strip() for x in (selected_missions if selected_missions else [])]
 
@@ -409,37 +288,42 @@ def display_actor_report(data_plan_prod, data_float, rates, acteur_filter, selec
         filtered_plan = data_plan_prod[data_plan_prod["Code Mission"].isin(missions_acteur)].copy()
     else:
         filtered_plan = data_plan_prod.copy()
-    import base64
 
-    def get_image_base64(image_path):
-        with open(image_path, "rb") as img_file:
-            return base64.b64encode(img_file.read()).decode()
+    # -----------------------
+    # ✅ PV de l’acteur (unique)
+    # -----------------------
+    # -----------------------
+    # ✅ PV de l’acteur (base depuis Rates)
+    # -----------------------
+    pv_base = 0.0
+    if {"Acteur", "PV"}.issubset(rates.columns):
+        s = rates.loc[rates["Acteur"].astype(str).str.strip() == str(acteur_filter).strip(), "PV"]
+        if len(s) > 0:
+            pv_base = pd.to_numeric(s.iloc[0], errors="coerce")
+            pv_base = 0.0 if pd.isna(pv_base) else float(pv_base)
 
-    logo_base64 = get_image_base64("Logo_Africa.png")  # ✅ Racine du projet
+    # -----------------------
+    # ✅ Override PV manuel (sidebar) -> impact REAL TIME sur toute la page
+    # -----------------------
+    if "pv_overrides" not in st.session_state:
+        st.session_state["pv_overrides"] = {}
 
-    st.sidebar.markdown("---")
+    key_pv = str(acteur_filter).strip()
+    pv_default = float(st.session_state["pv_overrides"].get(key_pv, pv_base))
 
-    st.sidebar.markdown(
-        f"""
-        <div style="text-align: center; padding: 15px 10px; font-family: 'Segoe UI', sans-serif;">
-            <p style="font-size: 12px; color: #888; margin: 0 0 6px 0; letter-spacing: 0.5px;">
-                Developed by
-            </p>
-            <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; margin-bottom: 10px;">
-                <p style="font-size: 15px; font-weight: 700; color: #0033A0; margin: 0; letter-spacing: 1px;">
-                    Ilyass GOTNI
-                </p>
-                <img src="data:image/png;base64,{logo_base64}" style="height: 35px; width: auto; object-fit: contain;"/>
-            </div>
-            <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 8px 0;">
-            <p style="font-size: 10px; color: #aaa; margin: 0; letter-spacing: 0.3px;">
-                © 2026 · All Rights Reserved<br>
-                Unauthorized use prohibited
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True
+    pv_acteur = st.sidebar.number_input(
+        "💶 PV (Facturation journalière) - override",
+        min_value=0.0,
+        value=float(pv_default),
+        step=10.0,
+        format="%.0f",
+        key=f"pv_input_{key_pv}"
     )
+
+    # Sauvegarde override (par acteur)
+    st.session_state["pv_overrides"][key_pv] = float(pv_acteur)
+
+
     # -----------------------
     # ✅ Calculs globaux acteur
     # -----------------------
@@ -560,7 +444,7 @@ def display_actor_report(data_plan_prod, data_float, rates, acteur_filter, selec
         st.markdown(f"""
             <div class="card">
                 <div class="metric">{ca_engage_total:,.0f} €</div>
-                <div class="label">CA Produit (CA Engagé)</div>
+                <div class="label">CA Facturé (CA Engagé)</div>
                 <div class="delta {get_delta_class(pct_used)}">{pct_used:.0f}%</div>
             </div>
         """.replace(",", " "), unsafe_allow_html=True)
@@ -628,7 +512,7 @@ def display_actor_report(data_plan_prod, data_float, rates, acteur_filter, selec
     # -----------------------
     # ✅ TABLE EXCEL-LIKE : PAR MISSION
     # -----------------------
-    st.subheader("Détails généraux Budget annuel par mission")
+    st.subheader("Détails par mission (format Excel)")
 
     # --- Budget par mission (depuis FINANCE)
     df_budget_mission = (
@@ -667,32 +551,24 @@ def display_actor_report(data_plan_prod, data_float, rates, acteur_filter, selec
 
     # CA
     df["CA Budget"] = df["Budget (Jour)"] * df["PV"]
-    df["CA Produit"] = df["Réalisé (Jour)"] * df["PV"]  # = CA Engagé
-    df["Ecart"] =  df["CA Budget"] - df["CA Produit"]
+    df["CA Facturé"] = df["Réalisé (Jour)"] * df["PV"]  # = CA Engagé
+    df["Ecart"] =  df["CA Budget"] - df["CA Facturé"]
     df["Ecart %"] = df.apply(lambda r: (r["Ecart"] / r["CA Budget"] * 100) if r["CA Budget"] > 0 else 0, axis=1)
 
-    # Totaux
-    budget_j_total = df["Budget (Jour)"].sum()
-    realise_j_total = df["Réalisé (Jour)"].sum()
-    ecart_j_total = budget_j_total - realise_j_total
-
-    ca_budget_total = df["CA Budget"].sum()
-    ca_facture_total = df["CA Produit"].sum()
-    ecart_ca_total = ca_budget_total - ca_facture_total
-
+    # Total
     total = {
         "Code Mission": "TOTAL",
         "Nom de la mission": "",
-        "Budget (Jour)": budget_j_total,
-        "Réalisé (Jour)": realise_j_total,
+        "Budget (Jour)": df["Budget (Jour)"].sum(),
+        "Réalisé (Jour)": df["Réalisé (Jour)"].sum(),
         "Heures": df["Heures"].sum(),
-        "Ecart (Jour)": ecart_j_total,
-        "Ecart % (Jour)": (ecart_j_total / budget_j_total * 100) if budget_j_total > 0 else 0,
+        "Ecart (Jour)": df["Ecart (Jour)"].sum(),
+        "Ecart % (Jour)": ((df["Réalisé (Jour)"].sum() - df["Budget (Jour)"].sum()) / df["Budget (Jour)"].sum() * 100) if df["Budget (Jour)"].sum() > 0 else 0,
         "PV": "",
-        "CA Budget": ca_budget_total,
-        "CA Produit": ca_facture_total,
-        "Ecart": ecart_ca_total,
-        "Ecart %": (ecart_ca_total / ca_budget_total * 100) if ca_budget_total > 0 else 0,
+        "CA Budget": df["CA Budget"].sum(),
+        "CA Facturé": df["CA Facturé"].sum(),
+        "Ecart": df["Ecart"].sum(),
+        "Ecart %": (df["Ecart"].sum() / df["CA Budget"].sum() * 100) if df["CA Budget"].sum() > 0 else 0,
     }
     df = pd.concat([df, pd.DataFrame([total])], ignore_index=True)
 
@@ -725,7 +601,7 @@ def display_actor_report(data_plan_prod, data_float, rates, acteur_filter, selec
     for c in ["Budget (Jour)", "Réalisé (Jour)", "Heures", "Ecart (Jour)"]:
         df_display[c] = df_display[c].apply(fmt_num)
 
-    for c in ["PV", "CA Budget", "CA Produit", "Ecart"]:
+    for c in ["PV", "CA Budget", "CA Facturé", "Ecart"]:
         df_display[c] = df_display[c].apply(fmt_eur)
 
     for c in ["Ecart % (Jour)", "Ecart %"]:
@@ -741,7 +617,7 @@ def display_actor_report(data_plan_prod, data_float, rates, acteur_filter, selec
         "Ecart % (Jour)",
         "PV",
         "CA Budget",
-        "CA Produit",
+        "CA Facturé",
         "Ecart",
         "Ecart %",
     ]
@@ -775,371 +651,8 @@ def display_actor_report(data_plan_prod, data_float, rates, acteur_filter, selec
     ])
 )
 
-    st.dataframe(styled, use_container_width=True, hide_index=True)
+    st.dataframe(styled, use_container_width=True)
 
-    st.subheader(" Suivi détaillé Budget mensuel / Réalisé / Restant par mission")
-    st.caption("ℹ️ Budget mensuel calculé à partir du budget annuel divisé par 12.")
-    # ============================
-    # Base budget mission
-    # ============================
-    df_budget_base = df_budget_mission.copy()
-    df_budget_base["Budget (Jour)"] = pd.to_numeric(df_budget_base["Budget (Jour)"], errors="coerce").fillna(0)
-
-    # Budget mensuel = budget annuel / 12
-    df_budget_base["Budget Mensuel"] = df_budget_base["Budget (Jour)"] / 12
-
-    # ============================
-    # Base réalisé mission/mois
-    # ============================
-    tmp_real = filtered_float.copy()
-    tmp_real["Réalisé (Jour)"] = pd.to_numeric(tmp_real["Logged Billable hours"], errors="coerce").fillna(0) / 8
-    tmp_real["Mois_dt"] = tmp_real["Date"].dt.to_period("M").dt.to_timestamp()
-
-    df_real_month = (
-        tmp_real.groupby(["Code Mission", "Mois_dt"], as_index=False)["Réalisé (Jour)"]
-        .sum()
-    )
-
-    # ============================
-    # Timeline complète
-    # ============================
-    months = pd.date_range(
-        date_debut.to_period("M").to_timestamp(),
-        date_fin.to_period("M").to_timestamp(),
-        freq="MS"
-    )
-
-    missions_list = df_budget_base["Code Mission"].dropna().astype(str).unique().tolist()
-
-    grid = pd.MultiIndex.from_product(
-        [missions_list, months],
-        names=["Code Mission", "Mois_dt"]
-    ).to_frame(index=False)
-
-    # ============================
-    # Fusion budget + réalisé
-    # ============================
-    df_track = grid.merge(
-        df_budget_base[["Code Mission", "Nom de la mission", "Budget (Jour)", "Budget Mensuel"]],
-        on="Code Mission",
-        how="left"
-    ).merge(
-        df_real_month,
-        on=["Code Mission", "Mois_dt"],
-        how="left"
-    )
-
-    df_track["Budget (Jour)"] = df_track["Budget (Jour)"].fillna(0)
-    df_track["Budget Mensuel"] = df_track["Budget Mensuel"].fillna(0)
-    df_track["Réalisé (Jour)"] = df_track["Réalisé (Jour)"].fillna(0)
-
-    # ✅ Garder seulement les missions ayant au moins un budget mensuel non nul
-    #    ou un réalisé non nul sur au moins un mois de la période
-    missions_to_keep_jours = (
-        df_track.groupby("Code Mission")[["Budget Mensuel", "Réalisé (Jour)"]]
-        .apply(lambda g: ((g != 0).any()).any())
-    )
-    missions_to_keep_jours = missions_to_keep_jours[missions_to_keep_jours].index.tolist()
-    df_track = df_track[df_track["Code Mission"].isin(missions_to_keep_jours)].copy()
-    
-    # Restant du mois = budget mensuel - réalisé du mois
-    df_track["Restant Mois"] = df_track["Budget Mensuel"] - df_track["Réalisé (Jour)"]
-
-    # Réalisé cumulé et restant cumulé
-    df_track = df_track.sort_values(["Code Mission", "Mois_dt"])
-    df_track["Réalisé Cumulé"] = df_track.groupby("Code Mission")["Réalisé (Jour)"].cumsum()
-    df_track["Restant Cumulé"] = df_track["Budget (Jour)"] - df_track["Réalisé Cumulé"]
-
-    # Label mois
-    df_track["Mois"] = df_track["Mois_dt"].dt.strftime("%Y-%m")
-
-    # ============================
-    # Construire tableau final
-    # ============================
-    rows = []
-    for _, row in df_track.iterrows():
-        rows.append({
-            "Code Mission": row["Code Mission"],
-            "Nom de la mission": row["Nom de la mission"],
-            "Budget Annuel": round(row["Budget (Jour)"], 2),
-            "Mois": row["Mois"],
-            "Budget Mensuel": round(row["Budget Mensuel"], 2),
-            "Réalisé": round(row["Réalisé (Jour)"], 2),
-            "Restant Mois": round(row["Restant Mois"], 2),
-            "Restant Cumulé": round(row["Restant Cumulé"], 2),
-        })
-
-    df_long = pd.DataFrame(rows)
-
-    # Pivot mensuel
-    pivot_budget_mensuel = df_long.pivot_table(
-        index=["Code Mission", "Nom de la mission", "Budget Annuel"],
-        columns="Mois",
-        values="Budget Mensuel",
-        aggfunc="first"
-    )
-
-    pivot_real = df_long.pivot_table(
-        index=["Code Mission", "Nom de la mission", "Budget Annuel"],
-        columns="Mois",
-        values="Réalisé",
-        aggfunc="first"
-    )
-
-    pivot_rest_mois = df_long.pivot_table(
-        index=["Code Mission", "Nom de la mission", "Budget Annuel"],
-        columns="Mois",
-        values="Restant Mois",
-        aggfunc="first"
-    )
-
-    pivot_rest_cum = df_long.groupby(
-        ["Code Mission", "Nom de la mission", "Budget Annuel"],
-        as_index=True
-    )["Restant Cumulé"].last()
-
-    # Construire tableau final
-    final_df = pd.DataFrame(index=pivot_budget_mensuel.index)
-
-
-    for mois in sorted(df_long["Mois"].unique()):
-        final_df[f"{mois} | Budget"] = pivot_budget_mensuel.get(mois)
-        final_df[f"{mois} | Réalisé"] = pivot_real.get(mois)
-        final_df[f"{mois} | Restant"] = pivot_rest_mois.get(mois)
-
-    final_df["Restant Cumulé"] = pivot_rest_cum
-
-    final_df = final_df.reset_index()
-
-    # Ligne TOTAL
-    total_row = {
-        "Code Mission": "",
-        "Nom de la mission": "TOTAL",
-        "Budget Annuel": final_df["Budget Annuel"].sum()
-    }
-
-    for col in final_df.columns:
-        if col not in ["Code Mission", "Nom de la mission", "Budget Annuel"]:
-            total_row[col] = final_df[col].sum()
-
-    final_df = pd.concat([final_df, pd.DataFrame([total_row])], ignore_index=True)
-    # ============================
-    # Formatage
-    # ============================
-    def fmt_num(x):
-        try:
-            x = float(x)
-            return f"{x:.2f}".rstrip("0").rstrip(".")
-        except:
-            return x
-
-    def color_remaining(val):
-        try:
-            v = float(val)
-            if v < 0:
-                return "color: #c62828; font-weight: 600;"
-            return "color: #2e7d32; font-weight: 600;"
-        except:
-            return ""
-
-    df_display = final_df.copy()
-
-    # format numbers
-    for col in df_display.columns[2:]:
-        df_display[col] = df_display[col].apply(fmt_num)
-
-    # colonnes à colorer
-    cols_color = [c for c in df_display.columns if " | Restant" in c or c == "Restant Cumulé"]
-
-    styled_jours = (
-        df_display
-        .style
-        .apply(style_budget_tables, axis=1)
-        .applymap(color_remaining, subset=[c for c in df_display.columns if "Restant" in c])
-    )
-
-    st.dataframe(styled_jours, use_container_width=True, hide_index=True)
-
-    st.subheader("Suivi détaillé CA mensuel / Produit / Restant par mission")
-    st.caption("ℹ️ Budget mensuel calculé à partir du budget annuel divisé par 12.")
-    # ============================
-    # Base budget mission (CA)
-    # ============================
-    df_budget_ca = df_budget_mission.copy()
-    df_budget_ca["Budget (Jour)"] = pd.to_numeric(df_budget_ca["Budget (Jour)"], errors="coerce").fillna(0)
-
-    # CA Budget annuel
-    df_budget_ca["CA Budget Annuel"] = df_budget_ca["Budget (Jour)"] * pv_acteur
-
-    # CA Budget mensuel
-    df_budget_ca["CA Budget Mensuel"] = df_budget_ca["CA Budget Annuel"] / 12
-
-
-    # ============================
-    # Réalisé CA par mission / mois
-    # ============================
-    tmp_real_ca = filtered_float.copy()
-    tmp_real_ca["Réalisé (Jour)"] = pd.to_numeric(tmp_real_ca["Logged Billable hours"], errors="coerce").fillna(0) / 8
-    tmp_real_ca["CA Produit"] = tmp_real_ca["Réalisé (Jour)"] * pv_acteur
-    tmp_real_ca["Mois_dt"] = tmp_real_ca["Date"].dt.to_period("M").dt.to_timestamp()
-
-    df_real_ca_month = (
-        tmp_real_ca.groupby(["Code Mission", "Mois_dt"], as_index=False)["CA Produit"]
-        .sum()
-    )
-
-    # ============================
-    # Timeline
-    # ============================
-    months = pd.date_range(
-        date_debut.to_period("M").to_timestamp(),
-        date_fin.to_period("M").to_timestamp(),
-        freq="MS"
-    )
-
-    missions_list = df_budget_ca["Code Mission"].dropna().astype(str).unique().tolist()
-
-    grid = pd.MultiIndex.from_product(
-        [missions_list, months],
-        names=["Code Mission", "Mois_dt"]
-    ).to_frame(index=False)
-
-    # ============================
-    # Fusion budget + réalisé
-    # ============================
-    df_track_ca = grid.merge(
-        df_budget_ca[["Code Mission", "Nom de la mission", "CA Budget Annuel", "CA Budget Mensuel"]],
-        on="Code Mission",
-        how="left"
-    ).merge(
-        df_real_ca_month,
-        on=["Code Mission", "Mois_dt"],
-        how="left"
-    )
-
-    df_track_ca["CA Budget Annuel"] = df_track_ca["CA Budget Annuel"].fillna(0)
-    df_track_ca["CA Budget Mensuel"] = df_track_ca["CA Budget Mensuel"].fillna(0)
-    df_track_ca["CA Produit"] = df_track_ca["CA Produit"].fillna(0)
-
-    missions_to_keep_ca = (
-        df_track_ca.groupby("Code Mission")[["CA Budget Mensuel", "CA Produit"]]
-        .apply(lambda g: ((g != 0).any()).any())
-    )
-    missions_to_keep_ca = missions_to_keep_ca[missions_to_keep_ca].index.tolist()
-    df_track_ca = df_track_ca[df_track_ca["Code Mission"].isin(missions_to_keep_ca)].copy()
-
-    # Restant du mois
-    df_track_ca["CA Restant Mois"] = df_track_ca["CA Budget Mensuel"] - df_track_ca["CA Produit"]
-
-    # Cumul
-    df_track_ca = df_track_ca.sort_values(["Code Mission", "Mois_dt"])
-    df_track_ca["CA Produit Cumulé"] = df_track_ca.groupby("Code Mission")["CA Produit"].cumsum()
-    df_track_ca["CA Restant Cumulé"] = df_track_ca["CA Budget Annuel"] - df_track_ca["CA Produit Cumulé"]
-
-    df_track_ca["Mois"] = df_track_ca["Mois_dt"].dt.strftime("%Y-%m")
-
-    # ============================
-    # Construction tableau
-    # ============================
-    rows = []
-    for _, row in df_track_ca.iterrows():
-        rows.append({
-            "Code Mission": row["Code Mission"],
-            "Nom de la mission": row["Nom de la mission"],
-            "CA Budget Annuel": round(row["CA Budget Annuel"], 0),
-            "Mois": row["Mois"],
-            "Budget Mensuel": round(row["CA Budget Mensuel"], 0),
-            "Produit": round(row["CA Produit"], 0),
-            "Restant Mois": round(row["CA Restant Mois"], 0),
-            "Restant Cumulé": round(row["CA Restant Cumulé"], 0),
-        })
-
-    df_long_ca = pd.DataFrame(rows)
-
-    # Pivot
-    pivot_budget = df_long_ca.pivot_table(
-        index=["Code Mission", "Nom de la mission", "CA Budget Annuel"],
-        columns="Mois",
-        values="Budget Mensuel",
-        aggfunc="first"
-    )
-
-    pivot_real = df_long_ca.pivot_table(
-        index=["Code Mission", "Nom de la mission", "CA Budget Annuel"],
-        columns="Mois",
-        values="Produit",
-        aggfunc="first"
-    )
-
-    pivot_rest = df_long_ca.pivot_table(
-        index=["Code Mission", "Nom de la mission", "CA Budget Annuel"],
-        columns="Mois",
-        values="Restant Mois",
-        aggfunc="first"
-    )
-
-    pivot_rest_cum = df_long_ca.groupby(
-        ["Code Mission", "Nom de la mission", "CA Budget Annuel"],
-        as_index=True
-    )["Restant Cumulé"].last()
-
-    # Table finale
-    final_df_ca = pd.DataFrame(index=pivot_budget.index)
-
-    for mois in sorted(df_long_ca["Mois"].unique()):
-        final_df_ca[f"{mois} | Budget"] = pivot_budget.get(mois)
-        final_df_ca[f"{mois} | Produit"] = pivot_real.get(mois)
-        final_df_ca[f"{mois} | Restant"] = pivot_rest.get(mois)
-
-    final_df_ca["Restant Cumulé"] = pivot_rest_cum
-
-    final_df_ca = final_df_ca.reset_index()
-    
-    # Ligne TOTAL
-    total_row_ca = {
-        "Code Mission": "",
-        "Nom de la mission": "TOTAL",
-        "CA Budget Annuel": final_df_ca["CA Budget Annuel"].sum()
-    }
-
-    for col in final_df_ca.columns:
-        if col not in ["Code Mission", "Nom de la mission", "CA Budget Annuel"]:
-            total_row_ca[col] = final_df_ca[col].sum()
-
-    final_df_ca = pd.concat([final_df_ca, pd.DataFrame([total_row_ca])], ignore_index=True)
-    # ============================
-    # Format € et couleurs
-    # ============================
-    def fmt_eur(x):
-        try:
-            return f"{int(round(float(x),0)):,.0f} €".replace(",", " ")
-        except:
-            return x
-
-    def color_remaining(val):
-        try:
-            v = float(str(val).replace("€","").replace(" ",""))
-            if v < 0:
-                return "color:#c62828; font-weight:600;"
-            return "color:#2e7d32; font-weight:600;"
-        except:
-            return ""
-
-    df_display_ca = final_df_ca.copy()
-
-    for col in df_display_ca.columns[2:]:
-        df_display_ca[col] = df_display_ca[col].apply(fmt_eur)
-
-    cols_color = [c for c in df_display_ca.columns if "Restant" in c]
-
-    styled_ca = (
-        df_display_ca
-        .style
-        .apply(style_budget_tables, axis=1)
-        .applymap(color_remaining, subset=[c for c in df_display_ca.columns if "Restant" in c])
-    )
-
-    st.dataframe(styled_ca, use_container_width=True, hide_index=True)
     # ============================
     # 📈 CHARTS CUMULÉS (Jours + CA)
     # ============================
@@ -1262,6 +775,7 @@ def display_actor_report(data_plan_prod, data_float, rates, acteur_filter, selec
 
         st.plotly_chart(fig_ca, use_container_width=True)
 
+
     # -----------------------
     # ✅ Session state (si tu veux réutiliser ailleurs)
     # -----------------------
@@ -1275,10 +789,6 @@ def display_actor_report(data_plan_prod, data_float, rates, acteur_filter, selec
 # =========================================================
 # ✅ MAIN : lecture session_state + sidebar inversée + appel
 # =========================================================
-from ui import inject_shared_css, show_sidebar
-
-inject_shared_css()
-show_sidebar()
 
 if "data_plan_prod" in st.session_state and "data_float" in st.session_state and "rates" in st.session_state:
     data_plan_prod = st.session_state["data_plan_prod"]
@@ -1303,38 +813,7 @@ if "data_plan_prod" in st.session_state and "data_float" in st.session_state and
         options=sorted(actor_cols),
         key="acteur_selector"
     )
-    # -----------------------
-    # ✅ PV base depuis Rates
-    # -----------------------
-    pv_base = 0.0
-    if {"Acteur", "PV"}.issubset(rates.columns):
-        s = rates.loc[
-            rates["Acteur"].astype(str).str.strip() == str(acteur_filter).strip(),
-            "PV"
-        ]
-        if len(s) > 0:
-            pv_base = pd.to_numeric(s.iloc[0], errors="coerce")
-            pv_base = 0.0 if pd.isna(pv_base) else float(pv_base)
 
-    # -----------------------
-    # ✅ Override PV (sidebar sous intervenant)
-    # -----------------------
-    if "pv_overrides" not in st.session_state:
-        st.session_state["pv_overrides"] = {}
-
-    key_pv = str(acteur_filter).strip()
-    pv_default = float(st.session_state["pv_overrides"].get(key_pv, pv_base))
-
-    pv_acteur = st.sidebar.number_input(
-        "💶 PV (Facturation journalière)",
-        min_value=0.0,
-        value=float(pv_default),
-        step=10.0,
-        format="%.0f",
-        key=f"pv_input_{key_pv}"
-    )
-    st.sidebar.markdown("---")
-    st.session_state["pv_overrides"][key_pv] = float(pv_acteur)
     # --- Missions où cet acteur a soit du BUDGET (plan prod) soit du RÉALISÉ (float)
 
     # 1) Missions avec budget > 0
@@ -1396,14 +875,7 @@ if "data_plan_prod" in st.session_state and "data_float" in st.session_state and
     )
 
     # ✅ Appel vue acteur
-    display_actor_report(
-    data_plan_prod,
-    data_float,
-    rates,
-    acteur_filter,
-    selected_missions,
-    pv_acteur
-)
+    display_actor_report(data_plan_prod, data_float, rates, acteur_filter, selected_missions)
 
 else:
     st.warning("Aucune donnée disponible. Veuillez importer un fichier dans la page d'importation.")

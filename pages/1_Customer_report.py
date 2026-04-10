@@ -12,58 +12,295 @@ import streamlit.components.v1 as components  # Ajout de l'import correct
 import locale
 import plotly.graph_objects as go
 from streamlit_option_menu import option_menu # type: ignore
+from app import require_auth
+
+require_auth()
 
 try:
     locale.setlocale(locale.LC_ALL, 'fr_FR.UTF-8')
 except locale.Error:
     pass  # Ignore l’erreur sur Streamlit Cloud
 
+st.set_page_config(page_title="Customer Report", page_icon="📊", layout="wide")
+st.logo("Logo_Advent.png", icon_image="Logom.png")
 # Injecter le CSS pour les cards
 st.markdown("""
     <style>
+    [data-testid="stAppViewContainer"] {
+        background:
+            radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.12), transparent 22%),
+            radial-gradient(circle at 80% 18%, rgba(147, 197, 253, 0.16), transparent 20%),
+            radial-gradient(circle at 50% 75%, rgba(96, 165, 250, 0.10), transparent 28%),
+            linear-gradient(180deg, #f8fbff 0%, #eef4ff 52%, #e9f0fb 100%);
+        min-height: 100vh;
+    }
+
+    [data-testid="stAppViewContainer"]::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image:
+            linear-gradient(rgba(37, 99, 235, 0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(37, 99, 235, 0.05) 1px, transparent 1px);
+        background-size: 42px 42px;
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    [data-testid="stAppViewContainer"] > [data-testid="stMain"] {
+        position: relative;
+        z-index: 1;
+    }
+
     .card-container {
         display: flex;
-        gap: 20px;
-        margin-bottom: 20px;
+        gap: 22px;
+        margin-bottom: 22px;
     }
+
     .title {
         font-family: 'Arial', sans-serif;
         font-size: 2.5rem;
         text-align: center;
         margin-bottom: 20px;
-        color: #333;
+        color: #1f2937;
+        font-weight: 800;
+        letter-spacing: -0.5px;
     }
+
     .card {
-        background-color: #f9f9f9;
-        border-radius: 10px;
-        padding: 20px;
+        position: relative;
+        background: rgba(255, 255, 255, 0.88);
+        border: 1px solid rgba(37, 99, 235, 0.10);
+        border-radius: 22px;
+        padding: 28px 24px 22px 24px;
         text-align: center;
-        box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+        box-shadow:
+            0 10px 30px rgba(15, 23, 42, 0.08),
+            0 2px 8px rgba(37, 99, 235, 0.05);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
         flex: 1;
+        min-height: 128px;
+        transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
+        overflow: hidden;
     }
+
+    .card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 5px;
+        background: linear-gradient(90deg, #2563eb, #60a5fa);
+        opacity: 0.95;
+    }
+
+    .card:hover {
+        transform: translateY(-6px);
+        box-shadow:
+            0 18px 38px rgba(15, 23, 42, 0.12),
+            0 8px 18px rgba(37, 99, 235, 0.08);
+        border-color: rgba(37, 99, 235, 0.22);
+    }
+
     .metric {
-        font-size: 2rem;
-        font-weight: bold;
+        font-size: 2.35rem;
+        font-weight: 800;
+        color: #111827;
+        line-height: 1.1;
+        margin-bottom: 10px;
+        letter-spacing: -0.8px;
     }
-    .delta {
-        font-size: 1.2rem;
-        margin-top: 5px;
-    }
+
     .label {
         font-size: 1rem;
-        color: #555;
+        color: #6b7280;
+        font-weight: 500;
+        margin-top: 2px;
+        margin-bottom: 8px;
     }
+
+    .delta {
+        font-size: 1.05rem;
+        font-weight: 700;
+        margin-top: 8px;
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: rgba(15, 23, 42, 0.04);
+    }
+
     .positive {
-        color: green;
+        color: #15803d;
+        background: rgba(34, 197, 94, 0.10);
     }
+
     .negative {
-        color: red;
+        color: #b91c1c;
+        background: rgba(239, 68, 68, 0.10);
+    }
+
+    @media print {
+
+        html, body,
+        [data-testid="stAppViewContainer"],
+        [data-testid="stAppViewContainer"] > [data-testid="stMain"] {
+            background: white !important;
+        }
+
+        [data-testid="stAppViewContainer"]::before {
+            display: none !important;
+            content: none !important;
+        }
+
+        .block-container {
+            padding-top: 10px !important;
+            padding-bottom: 10px !important;
+            padding-left: 20px !important;
+            padding-right: 20px !important;
+        }
+
+        .card-container {
+            display: flex !important;
+            gap: 12px !important;
+            width: 100% !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            margin-bottom: 12px !important;
+        }
+
+        .card {
+            background: white !important;
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 12px !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            transform: none !important;
+            min-height: auto !important;
+            width: 100% !important;
+            flex: 1 1 0 !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            overflow: visible !important;
+        }
+
+        .card::before {
+            display: none !important;
+            content: none !important;
+        }
+
+        .card:hover {
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .metric {
+            color: #111827 !important;
+            font-size: 24px !important;
+        }
+
+        .label {
+            color: #374151 !important;
+            font-size: 13px !important;
+        }
+
+        .delta {
+            background: none !important;
+            padding: 0 !important;
+            font-size: 13px !important;
+        }
+
+        .positive {
+            color: #15803d !important;
+            background: none !important;
+        }
+
+        .negative {
+            color: #b91c1c !important;
+            background: none !important;
+        }
+
+        h1, h2, h3, .mission-info-container, .periode-container, .card-container, .card {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }
     }
     </style>
 """, unsafe_allow_html=True)
 
+# st.markdown("""
+#     <style>
+#     [data-testid="stAppViewContainer"] {
+#         background:
+#             radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.12), transparent 22%),
+#             radial-gradient(circle at 80% 18%, rgba(147, 197, 253, 0.16), transparent 20%),
+#             radial-gradient(circle at 50% 75%, rgba(96, 165, 250, 0.10), transparent 28%),
+#             linear-gradient(180deg, #f8fbff 0%, #eef4ff 52%, #e9f0fb 100%);
+#         min-height: 100vh;
+#     }
+
+#     [data-testid="stAppViewContainer"]::before {
+#         content: "";
+#         position: fixed;
+#         inset: 0;
+#         background-image:
+#             linear-gradient(rgba(37, 99, 235, 0.05) 1px, transparent 1px),
+#             linear-gradient(90deg, rgba(37, 99, 235, 0.05) 1px, transparent 1px);
+#         background-size: 42px 42px;
+#         pointer-events: none;
+#         z-index: 0;
+#     }
+
+#     [data-testid="stAppViewContainer"] > [data-testid="stMain"] {
+#         position: relative;
+#         z-index: 1;
+#     }
+#     .card-container {
+#         display: flex;
+#         gap: 20px;
+#         margin-bottom: 20px;
+#     }
+#     .title {
+#         font-family: 'Arial', sans-serif;
+#         font-size: 2.5rem;
+#         text-align: center;
+#         margin-bottom: 20px;
+#         color: #333;
+#     }
+#     .card {
+#         background-color: #f9f9f9;
+#         border-radius: 10px;
+#         padding: 20px;
+#         text-align: center;
+#         box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+#         flex: 1;
+#     }
+#     .metric {
+#         font-size: 2rem;
+#         font-weight: bold;
+#     }
+#     .delta {
+#         font-size: 1.2rem;
+#         margin-top: 5px;
+#     }
+#     .label {
+#         font-size: 1rem;
+#         color: #555;
+#     }
+#     .positive {
+#         color: green;
+#     }
+#     .negative {
+#         color: red;
+#     }
+#     </style>
+# """, unsafe_allow_html=True)
+
 def display_customer_report(data_plan_prod, data_float, rates, selected_intervenants):
-    #logo_path = "Logo_Advent.jpg"
+    #logo_path = "Logo_Advent.png"
 
         # 🔹 Conversion de la colonne "Date" en format datetime
     data_float["Date"] = pd.to_datetime(data_float["Date"], errors="coerce")
@@ -167,6 +404,37 @@ def display_customer_report(data_plan_prod, data_float, rates, selected_interven
         st.warning("⚠️ Aucune donnée disponible pour la période sélectionnée.")
         st.stop()
 
+    import base64
+
+    def get_image_base64(image_path):
+        with open(image_path, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode()
+
+    logo_base64 = get_image_base64("Logo_Africa.png")  # ✅ Racine du projet
+
+    st.sidebar.markdown("---")
+
+    st.sidebar.markdown(
+        f"""
+        <div style="text-align: center; padding: 15px 10px; font-family: 'Segoe UI', sans-serif;">
+            <p style="font-size: 12px; color: #888; margin: 0 0 6px 0; letter-spacing: 0.5px;">
+                Developed by
+            </p>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; margin-bottom: 10px;">
+                <p style="font-size: 15px; font-weight: 700; color: #0033A0; margin: 0; letter-spacing: 1px;">
+                    Ilyass GOTNI
+                </p>
+                <img src="data:image/png;base64,{logo_base64}" style="height: 35px; width: auto; object-fit: contain;"/>
+            </div>
+            <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 8px 0;">
+            <p style="font-size: 10px; color: #aaa; margin: 0; letter-spacing: 0.3px;">
+                © 2026 · All Rights Reserved<br>
+                Unauthorized use prohibited
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
     # 🔹 **Finaliser les variables**
     final_plan_prod = filtered_plan_prod.copy()
     final_float = filtered_float.copy()
@@ -412,33 +680,32 @@ def display_customer_report(data_plan_prod, data_float, rates, selected_interven
 
     
     # ✅ Formatage numérique AVANT styling
-    
     tableau_cumul_jours.iloc[:, 2:] = tableau_cumul_jours.iloc[:, 2:].applymap(lambda x: f"{x:.1f}")
-    # 🔹 Ajouter une colonne pour identifier la ligne "Total Général"
-    tableau_cumul_jours["is_total_general"] = tableau_cumul_jours["Code Mission"] == "Total Général"
 
-    # 🔹 Fonction de style combinée avec les couleurs demandées
+    # 🔹 Fonction de style sans colonne technique
     def style_personnalise(row):
         styles = []
+        is_total_row = row.name == len(tableau_cumul_jours) - 1  # dernière ligne
+
         for col in tableau_cumul_jours.columns:
             style = ""
-            if row["is_total_general"]:
+            if is_total_row:
                 style += "background-color: #FFCCCC;"
             elif col in ["Code Mission", "Acteur"]:
-                style += "background-color: #E6E7E8;"  # Gris
-            elif col != "Total":  # Toutes les colonnes mois (sauf Total)
+                style += "background-color: #E6E7E8;"
+            elif col != "Total":
                 style += "background-color: rgba(0, 51, 160, 0.2);"
+
             if col == "Total":
-                style += "background-color: #FFCCCC;"  # Total colonne
+                style += "background-color: #FFCCCC;"
+
             styles.append(style)
         return styles
 
-    # 🔹 Appliquer le style après formatage
-    styled_df = tableau_cumul_jours.style.apply(style_personnalise, axis=1)
+    styled_df = tableau_cumul_jours.style.apply(style_personnalise, axis=1).hide(axis="index")
 
-    # 📌 Affichage
     st.subheader("Cumul Jours de production réalisés")
-    st.dataframe(styled_df, use_container_width=True)
+    st.dataframe(styled_df, use_container_width=True, hide_index=True)
 
     #st.table(tableau_cumul_jours)
     #st.dataframe(tableau_cumul_jours)
@@ -455,53 +722,65 @@ def display_customer_report(data_plan_prod, data_float, rates, selected_interven
         columns='Mois',
         values='CA Engagé',
         aggfunc='sum',
-        fill_value=0  # Remplace les NaN par 0
+        fill_value=0
     ).reset_index()
 
-    # 📌 Ajouter une colonne "Total CA Engagé"
+    # 📌 Ajouter une colonne Total
     tableau_cumul_ca["Total"] = tableau_cumul_ca.iloc[:, 2:].sum(axis=1)
 
-    # 📌 Réorganiser les colonnes pour afficher 'Total' après 'Acteur'
+    # 📌 Réorganiser les colonnes
     colonnes_ordre = ['Code Mission', 'Acteur'] + sorted(tableau_cumul_ca.columns[2:-1]) + ['Total']
     tableau_cumul_ca = tableau_cumul_ca[colonnes_ordre]
 
-    # 📌 Ajouter une ligne "Total Général" en bas du tableau du CA engagé
-    total_general_ca = tableau_cumul_ca.iloc[:, 2:].replace({"€": "", " ": ""}, regex=True).apply(pd.to_numeric, errors='coerce').sum(axis=0)
+    # 📌 Ajouter la ligne Total Général
+    total_general_ca = tableau_cumul_ca.iloc[:, 2:].sum(axis=0)
     total_general_ca["Code Mission"] = "Total Général"
     total_general_ca["Acteur"] = ""
 
-    # 📌 Ajouter la ligne au DataFrame
-    tableau_cumul_ca = pd.concat([tableau_cumul_ca, pd.DataFrame([total_general_ca])], ignore_index=True)
-
-    # ✅ Appliquer le formatage avec le signe euro
-    tableau_cumul_ca.iloc[:, 2:] = tableau_cumul_ca.iloc[:, 2:].applymap(
-        lambda x: f"{int(float(x)):,.0f} €".replace(",", " ")
+    tableau_cumul_ca = pd.concat(
+        [tableau_cumul_ca, pd.DataFrame([total_general_ca])],
+        ignore_index=True
     )
 
-    # 🔹 Ajouter une colonne pour identifier la ligne "Total Général"
-    tableau_cumul_ca["is_total_general"] = tableau_cumul_ca["Code Mission"] == "Total Général"
+    # ✅ Fonction robuste de formatage €
+    def format_euro(x):
+        if pd.isna(x):
+            return "0 €"
+        if isinstance(x, str):
+            x = x.replace("€", "").replace(" ", "").replace(",", ".").strip()
+        try:
+            return f"{int(round(float(x))):,} €".replace(",", " ")
+        except:
+            return "0 €"
 
-    # 🔹 Fonction de style combinée harmonisée
-    def style_personnalise(row):
+    # ✅ Formater seulement à la fin
+    tableau_cumul_ca.iloc[:, 2:] = tableau_cumul_ca.iloc[:, 2:].applymap(format_euro)
+
+    # 🔹 Style sans colonne technique
+    def style_personnalise_ca(row):
         styles = []
+        is_total_row = row.name == len(tableau_cumul_ca) - 1
+
         for col in tableau_cumul_ca.columns:
             style = ""
-            if row["is_total_general"]:
-                style += "background-color: #FFCCCC;"  # Ligne Total Général
+            if is_total_row:
+                style += "background-color: #FFCCCC;"
             elif col in ["Code Mission", "Acteur"]:
-                style += "background-color: #E6E7E8;"  # Gris
+                style += "background-color: #E6E7E8;"
             elif col != "Total":
-                style += "background-color: rgba(0, 51, 160, 0.2);"  # Bleu
+                style += "background-color: rgba(0, 51, 160, 0.2);"
+
             if col == "Total":
-                style += "background-color: #FFCCCC;"  # Colonne Total
+                style += "background-color: #FFCCCC;"
+
             styles.append(style)
         return styles
-    # 🔹 Appliquer le style après formatage
-    styled_ca_df = tableau_cumul_ca.style.apply(style_personnalise, axis=1)
 
-    # 📌 Affichage du tableau dans Streamlit
+    styled_ca_df = tableau_cumul_ca.style.apply(style_personnalise_ca, axis=1).hide(axis="index")
+
     st.subheader("Cumul du CA Engagé")
-    st.dataframe(styled_ca_df, use_container_width=True)
+    st.dataframe(styled_ca_df, use_container_width=True, hide_index=True)
+
 
 
         #st.table(tableau_cumul_ca)
@@ -555,7 +834,7 @@ def display_customer_report(data_plan_prod, data_float, rates, selected_interven
         'Jours Réalisés': format_intelligent
     })
 
-    st.dataframe(styled_intervenants, use_container_width=True)
+    st.dataframe(styled_intervenants, use_container_width=True, hide_index=True)
 
     # Graphiques
     st.subheader("Visualisations")
@@ -659,10 +938,13 @@ navbar=st.container()
 #     )
 selected = "Rapport Client"  # ou "Plus de Visualisations", selon ce que tu veux afficher
     
-# st.image("Logo_Advent.jpg", width=300)    
+# st.image("Logo_Advent.png", width=300)    
 # 🔄 Afficher le bon logo selon le code mission
 
+from ui import inject_shared_css, show_sidebar
 
+inject_shared_css()
+show_sidebar()
 # 🧠 Contenu des pages
 if selected == "Rapport Client":
     # Vérifiez si les données sont disponibles dans la session
@@ -670,7 +952,6 @@ if selected == "Rapport Client":
         data_plan_prod = st.session_state["data_plan_prod"]
         data_float = st.session_state["data_float"]
         rates = st.session_state["rates"]
-
         # 🟢 **Filtres interactifs**
         st.sidebar.header("Filtres")
 
@@ -699,17 +980,17 @@ if selected == "Rapport Client":
         )
 
         # Par défaut
-        logo_path = "Logo_Advent.jpg"
+        logo_path = "Logo_Advent.png"
         first_letter = str(mission_filter)[0].upper()
 
         if first_letter == "A":
-            logo_path = "Logo_Advent.jpg"
+            logo_path = "Logo_Advent.png"
         elif first_letter == "F":
             logo_path = "Logo_Africa.jpg"
         elif first_letter == "P":
             logo_path = "Logo_Partner.png"
         elif first_letter == "S":
-            logo_path = "Logo_Adventage_Sud.jpg"
+            logo_path = "Logo_Adventage_Sud.png"
         elif first_letter in ["L", "O", "M"]:
             logo_path = "Logo_Adventae.png"
 
@@ -893,7 +1174,7 @@ elif selected == "Plus de Visualisations":
 elif selected == "Rapport Jours":
 
     def display_customer_report(data_plan_prod, data_float, rates):
-        #logo_path = "Logo_Advent.jpg"
+        #logo_path = "Logo_Advent.png"
 
             # 🔹 Conversion de la colonne "Date" en format datetime
         data_float["Date"] = pd.to_datetime(data_float["Date"], errors="coerce")
